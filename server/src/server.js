@@ -1,10 +1,11 @@
 import dotenv from "dotenv";
 dotenv.config();
-console.log("ENV TEST:", process.env.GOOGLE_CLIENT_ID);
+
+
 import app from "./app.js";
 import { connectDB } from "./config/db.js";
 
-
+console.log("ENV TEST:", process.env.GOOGLE_CLIENT_ID);
 
 const PORT = process.env.PORT || 3000;
 
