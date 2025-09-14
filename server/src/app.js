@@ -1,21 +1,21 @@
 import express from "express";
 import cors from "cors";
-import authRoutes from "./routes/auth.js";
-const app = express();
 import session from "express-session";
 
+const app = express();
 
-app.use(cors()); // allow all origins for now
-
+app.use(cors());
 app.use(express.json());
 
+
 app.use(session({
-  secret: process.env.SESSION_SECRET ,
+  secret: process.env.SESSION_SECRET || 'fallback-session-secret',
   resave: false,
   saveUninitialized: false
 }));
-import passport from './config/passport.js'
-app.use(passport.initialize())
+
+import passport from './config/passport.js';
+app.use(passport.initialize());
 app.use(passport.session());
 
 app.get("/", (req, res) => {
@@ -27,6 +27,8 @@ app.get("/ping", (req, res) => {
   res.json({ message: "pong" });
 });
 
+
+import authRoutes from "./routes/auth.js";
 app.use("/api/auth", authRoutes);
 
 export default app;
