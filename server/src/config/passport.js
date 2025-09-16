@@ -16,8 +16,7 @@ if (!process.env.GOOGLE_CALLBACK_URL) {
   throw new Error("GOOGLE_CALLBACK_URL environment variable is required");
 }
 
-console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
-console.log("CLIENT SECRET:", process.env.GOOGLE_CLIENT_SECRET ? "SET" : "NOT SET");
+
 
 passport.use(
   new GoogleStrategy(

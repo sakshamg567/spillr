@@ -1,7 +1,15 @@
-export default function App() {
+import { Routes, Route, Navigate } from 'react-router-dom'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+
+const App = () => {
   return (
-    <div className="h-screen flex items-center justify-center bg-gray-100">
-      <h1 className="text-4xl font-bold text-indigo-600">Spillr 🚀</h1>
-    </div>
-  );
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+    </Routes>
+  )
 }
+
+export default App
