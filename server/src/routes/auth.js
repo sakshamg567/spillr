@@ -7,7 +7,7 @@ import passport from "../config/passport.js";
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey6786";
+const JWT_SECRET = process.env.JWT_SECRET 
 
 router.post("/register", async (req, res) => {
   try {
@@ -39,7 +39,6 @@ router.post("/register", async (req, res) => {
       expiresIn: "7d",
     });
 
-    console.log("User registered:", newUser);
 
     res.status(201).json({
       token,
@@ -53,8 +52,6 @@ router.post("/register", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    console.log("Login request body:", req.body);
-
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -74,9 +71,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
-
-    console.log("User logged in:", user);
-
+   
     res.status(200).json({
       token,
       user: { id: user._id, name: user.name, email: normalizedEmail },
@@ -95,7 +90,7 @@ router.get(
   (req, res) => {
     const token = jwt.sign({ id: req.user._id }, JWT_SECRET, { expiresIn: "7d" });
     
-       res.redirect(`http://localhost:3000/dashboard?token=${token}`);
+       res.redirect(`http://localhost:5173/dashboard?token=${token}`);
 
   }
 );
