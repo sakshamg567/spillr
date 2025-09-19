@@ -3,6 +3,7 @@ import Feedback from '../models/feedback.js';
 import Wall from "../models/Wall.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import validator from 'validator';
+import mongoose from 'mongoose'
 
 const router = express.Router();
 
@@ -45,22 +46,75 @@ router.post("/", async (req, res) => {
 });
 
 // Get feedback for owner (private)
+
 router.get('/owner/:wallId', authMiddleware, async (req, res) => {
   try {
     const wallId = req.params.wallId;
 
-    // ✅ Fetch wall to check ownership
+    //Verify wall ownership
     const wall = await Wall.findById(wallId);
     if (!wall) return res.status(404).json({ message: "Wall not found" });
-
     if (wall.ownerId.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    const feedbacks = await Feedback.find({ wallId }); // ✅ Fixed: Feedback.find
-    res.json(feedbacks);
+    //Sorting + filtering
+    const { sort = 'active',page = 1 , limit =10  } = req.query;  
+    const pageNumber = Math.max(1,parseInt(page,10));
+    const limitNumber = Math.min(100,parseInt(limit,10));
+    const skip = (pageNumber - 1) * limitNumber;
+
+    let filter = { wallId: mongoose.Types.ObjectId(wallId)};
+    let sortOption = { createdAt: -1 };
+
+    switch (sort) {
+      case 'answered':
+        filter.isAnswered = true;
+        filter.isArchived = false;
+        sortOption = { updatedAt: -1 }; // newest answers first
+        break;
+
+      case 'archived':
+        filter.isArchived = true;
+        sortOption = { updatedAt: -1 };
+        break;
+
+      case 'active':
+      default:
+        filter.isAnswered = false;
+        filter.isArchived = false;
+        sortOption = { createdAt: -1 }; // newest questions first
+        break;
+    }
+
+    // Fetch feedback
+    const feedbacks = await Feedback.find(filter)
+                                   .sort(sortOption)
+                                   .skip(skip)
+                                   .limit(limitNumber)
+                                   .lean();
+    //get total count for pagination 
+    const totalFeedbacks = await Feedback.countDocuments(filter);
+ 
+    res.json({
+      feedbacks,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages: Math.ceil(totalFeedbacks / limitNumber),
+        totalFeedbacks,
+        hasNextPage: pageNumber < Math.ceil(totalFeedbacks / limitNumber),
+        hasPrevPage: pageNumber > 1,
+        
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Error fetching feedback:", err);
+
+    if (err instanceof mongoose.Error.CastError && err.path === 'wallId') {
+       return res.status(400).json({ message: "Invalid wall ID format" });
+    }
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 

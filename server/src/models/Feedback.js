@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 const feedbackSchema = new mongoose.Schema({
   question: { type: String, required: true },
   answer: { type: String },
-  isAnswered: { type: Boolean, default: false, index: true }, 
   wallId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: "Wall", 
@@ -15,6 +14,8 @@ const feedbackSchema = new mongoose.Schema({
     of: Number,
     default: {}
   },
+  isAnswered: { type: Boolean, default: false, index: true },
+  isArchived: { type: Boolean, default: false, index: true }, 
 }, { timestamps: true });
 
 export default mongoose.model("Feedback", feedbackSchema);

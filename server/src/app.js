@@ -7,8 +7,15 @@ import wallRoutes from './routes/wall.js'
 import feedbackRoutes from "./routes/feedback.js";
 import authRoutes from "./routes/auth.js";
 import passport from './config/passport.js';
+import userSettings from './routes/userSettings.js'
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 app.use(helmet());
 
@@ -49,10 +56,14 @@ app.get("/", (req, res) => {
   res.send("Server is running ");
 });
 
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsPath));
+
 app.use(globalLimiter);
 app.use("/api/auth", authRoutes);
 app.use("/api/wall", wallRoutes);
 app.use('/api/feedback',feedbackRoutes);
+app.use("/api/settings", userSettings);
 
 app.use('/*splat', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
