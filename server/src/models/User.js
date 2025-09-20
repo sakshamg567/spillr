@@ -81,6 +81,7 @@ const userSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  blockedIps: [{ type: String }]
   },
  {
     timestamps: true,

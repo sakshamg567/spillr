@@ -4,97 +4,134 @@ import Wall from "../models/Wall.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import validator from 'validator';
 import mongoose from 'mongoose'
+import rateLimit from "express-rate-limit"; 
 
 const router = express.Router();
 
+const feedbackLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // 10 feedback per 5 minutes
+  message: { message: "Too many feedback submissions, please try again later" }
+});
+
+const validateQuestion = (question) => {
+  if (!question || typeof question !== 'string') return false;
+  const trimmed = question.trim();
+  return trimmed.length >= 3 && trimmed.length <= 1000;
+};
+
+const validateSlug = (slug) => {
+  if (!slug || typeof slug !== 'string') return false;
+  const trimmed = slug.trim();
+  return trimmed.length >= 2 && trimmed.length <= 50 && /^[a-zA-Z0-9_-]+$/.test(trimmed);
+};
+
+const validateObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
+
+
+router.get("/", (req, res) => {
+  console.log("GET /api/feedback hit - Feedback API info");
+  res.json({ 
+    message: "Feedback API is working!", 
+    endpoints: {
+      "POST /api/feedback": "Submit feedback",
+      "GET /api/feedback/wall/:slug": "Get public feedback for wall",
+      "POST /api/feedback/:id/react": "React to feedback"
+    },
+    status: "healthy"
+  });
+});
+
 // Submit feedback (public)
 
-router.post("/", async (req, res) => {
+router.post("/",feedbackLimiter, async (req, res) => {
   try {
-    const { question, wallSlug } = req.body;
+    const { question: rawQuestion, wallSlug: rawSlug } = req.body;
+    const question = rawQuestion?.trim();
+    const wallSlug = rawSlug?.trim()?.toLowerCase();
 
-    if (!question || typeof question !== 'string') {
-      return res.status(400).json({ message: "Question is required" });
+    if (!validateQuestion(question)) {
+      return res.status(400).json({ 
+        message: "Question must be between 3-1000 characters" 
+      });
     }
 
-    if (question.trim().length < 3) {
-      return res.status(400).json({ message: "Question too short" });
+    if (!validateSlug(wallSlug)) {
+      return res.status(400).json({ message: "Invalid wall slug format" });
     }
 
-    if (question.length > 1000) {
-      return res.status(400).json({ message: "Question too long" });
+    const wall = await Wall.findOne({ slug: wallSlug });
+    if (!wall) {
+      return res.status(404).json({ message: "Wall not found" });
     }
-
-    if (!wallSlug || typeof wallSlug !== 'string') {
-      return res.status(400).json({ message: "Wall slug is required" });
-    }
-
-    const wall = await Wall.findOne({ slug: wallSlug.trim().toLowerCase() });
-    if (!wall) return res.status(404).json({ message: "Wall not found" });
 
     const feedback = new Feedback({
-      question: validator.escape(question.trim()), 
+      question: validator.escape(question), 
       wallId: wall._id
     });
 
     await feedback.save();
     res.status(201).json(feedback);
   } catch (err) {
-    console.error("Error submitting feedback:", err.message);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Unable to submit feedback" });
   }
 });
 
-// Get feedback for owner (private)
-
+// Get feedback for owner 
 router.get('/owner/:wallId', authMiddleware, async (req, res) => {
   try {
-    const wallId = req.params.wallId;
+    const { wallId } = req.params;
 
-    //Verify wall ownership
+ 
+    if (!validateObjectId(wallId)) {
+      return res.status(400).json({ message: "Invalid wall ID format" });
+    }
+
     const wall = await Wall.findById(wallId);
-    if (!wall) return res.status(404).json({ message: "Wall not found" });
+    if (!wall) {
+      return res.status(404).json({ message: "Wall not found" });
+    }
+
     if (wall.ownerId.toString() !== req.user.id) {
       return res.status(403).json({ message: "Not authorized" });
     }
 
-    //Sorting + filtering
-    const { sort = 'active',page = 1 , limit =10  } = req.query;  
-    const pageNumber = Math.max(1,parseInt(page,10));
-    const limitNumber = Math.min(100,parseInt(limit,10));
+    const { sort = 'active', page = 1, limit = 10 } = req.query;  
+    const pageNumber = Math.max(1, parseInt(page, 10)) || 1;
+    const limitNumber = Math.min(100, Math.max(1, parseInt(limit, 10))) || 10;
     const skip = (pageNumber - 1) * limitNumber;
 
-    let filter = { wallId: mongoose.Types.ObjectId(wallId)};
+    let filter = { wallId: new mongoose.Types.ObjectId(wallId) };
     let sortOption = { createdAt: -1 };
 
     switch (sort) {
       case 'answered':
         filter.isAnswered = true;
         filter.isArchived = false;
-        sortOption = { updatedAt: -1 }; // newest answers first
+        sortOption = { updatedAt: -1 };
         break;
-
       case 'archived':
         filter.isArchived = true;
         sortOption = { updatedAt: -1 };
         break;
-
       case 'active':
       default:
         filter.isAnswered = false;
         filter.isArchived = false;
-        sortOption = { createdAt: -1 }; // newest questions first
+        sortOption = { createdAt: -1 };
         break;
     }
 
-    // Fetch feedback
-    const feedbacks = await Feedback.find(filter)
-                                   .sort(sortOption)
-                                   .skip(skip)
-                                   .limit(limitNumber)
-                                   .lean();
-    //get total count for pagination 
-    const totalFeedbacks = await Feedback.countDocuments(filter);
+    const [feedbacks, totalFeedbacks] = await Promise.all([
+      Feedback.find(filter)
+              .sort(sortOption)
+              .skip(skip)
+              .limit(limitNumber)
+              .lean(),
+      Feedback.countDocuments(filter)
+    ]);
  
     res.json({
       feedbacks,
@@ -104,77 +141,121 @@ router.get('/owner/:wallId', authMiddleware, async (req, res) => {
         totalFeedbacks,
         hasNextPage: pageNumber < Math.ceil(totalFeedbacks / limitNumber),
         hasPrevPage: pageNumber > 1,
-        
       }
     });
 
   } catch (err) {
-    console.error("Error fetching feedback:", err);
-
-    if (err instanceof mongoose.Error.CastError && err.path === 'wallId') {
-       return res.status(400).json({ message: "Invalid wall ID format" });
-    }
-    res.status(500).json({ message: "Internal server error" }); 
+    res.status(500).json({ message: "Unable to fetch feedback" }); 
   }
 });
 
-// Answer feedback
+
 router.post('/:id/answer', authMiddleware, async (req, res) => {
   try {
-    const { answer } = req.body;
-    const feedback = await Feedback.findById(req.params.id);
+    const { answer: rawAnswer } = req.body;
+    const answer = rawAnswer?.trim();
 
-    if (!feedback) return res.status(404).json({ message: "Feedback not found" }); 
-
-    const wall = await Wall.findById(feedback.wallId);
-     
-    if(!wall) return res.status(404).json({message:"Wall not found"});
-
-    if (wall.ownerId.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not authorized to answer this feedback" });
+    if (!answer || answer.length < 1 || answer.length > 2000) {
+      return res.status(400).json({ 
+        message: "Answer must be between 1-2000 characters" 
+      });
     }
 
-    feedback.answer = answer;
+    if (!validateObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid feedback ID format" });
+    }
+
+    const feedback = await Feedback.findById(req.params.id).populate('wallId');
+    if (!feedback) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    if (!feedback.wallId) {
+      return res.status(404).json({ message: "Associated wall not found" });
+    }
+
+    if (feedback.wallId.ownerId.toString() !== req.user.id) {
+      return res.status(403).json({ 
+        message: "Not authorized to answer this feedback" 
+      });
+    }
+
+    feedback.answer = validator.escape(answer);
     feedback.isAnswered = true;
     await feedback.save();
 
     res.json(feedback);
   } catch (err) {
-    
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Unable to answer feedback" });
   }
 });
 
-// React to feedback (public)
-router.post("/:id/react", async (req, res) => {
+const reactLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 20, // 20 reactions per minute
+  message: { message: "Too many reactions, slow down" }
+});
+
+router.post("/:id/react", reactLimiter, async (req, res) => {
   try {
     const { emoji } = req.body;
-    if (!emoji) return res.status(400).json({ message: "Emoji required" });
+    
+    if (!emoji || typeof emoji !== 'string' || emoji.length > 10) {
+      return res.status(400).json({ message: "Invalid emoji" });
+    }
+
+    if (!validateObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid feedback ID format" });
+    }
 
     const feedback = await Feedback.findById(req.params.id);
-    if (!feedback) return res.status(404).json({ message: "Feedback not found" });
+    if (!feedback) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
 
     const current = feedback.reactions.get(emoji) || 0;
-    feedback.reactions.set(emoji, current + 1);
+    
+    
+    if (current >= 1000) {
+      return res.status(400).json({ message: "Maximum reactions reached for this emoji" });
+    }
 
+    feedback.reactions.set(emoji, current + 1);
     await feedback.save();
+    
     res.json(feedback);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Unable to add reaction" });
   }
 });
 
-// Public: get answered feedback for a wall
+//  Public feedback with validation
 router.get("/wall/:slug", async (req, res) => {
   try {
-    const wall = await Wall.findOne({ slug: req.params.slug });
-    if (!wall) return res.status(404).json({ message: "Wall not found" });
+    const { slug: rawSlug } = req.params;
+    const slug = rawSlug?.trim()?.toLowerCase();
 
-    const feedbacks = await Feedback.find({ wallId: wall._id, isAnswered: true });
+    if (!validateSlug(slug)) {
+      return res.status(400).json({ message: "Invalid wall slug format" });
+    }
+
+    const wall = await Wall.findOne({ slug });
+    if (!wall) {
+      return res.status(404).json({ message: "Wall not found" });
+    }
+
+    const feedbacks = await Feedback.find({ 
+      wallId: wall._id, 
+      isAnswered: true,
+      isArchived: false 
+    })
+    .select('-__v -updatedAt')
+    .sort({ updatedAt: -1 })
+    .limit(100); // Prevent large responses
+
     res.json(feedbacks);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Unable to fetch feedback" });
   }
 });
 
