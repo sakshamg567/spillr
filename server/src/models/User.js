@@ -1,4 +1,3 @@
-// server/src/models/User.js
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -44,7 +43,10 @@ const userSchema = new mongoose.Schema(
     socialLinks: {
       twitter: {
         type: String,
-         match: [/^https?:\/\/(www\.)?twitter\.com\/.*/, 'Invalid Twitter URL']
+        match: [
+  /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[a-zA-Z0-9_]+\/?$/,
+  'Invalid X/Twitter URL. Example: https://x.com/username or https://twitter.com/username'
+]
        },
       linkedin: {
         type: String,

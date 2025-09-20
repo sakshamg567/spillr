@@ -1,4 +1,3 @@
-// server/src/routes/auth.js
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -7,7 +6,6 @@ import passport from "../config/passport.js";
 import rateLimit from "express-rate-limit";
 
 const router = express.Router();
-
 
 if (!process.env.JWT_SECRET 
  || process.env.JWT_SECRET 

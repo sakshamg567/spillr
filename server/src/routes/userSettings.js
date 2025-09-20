@@ -71,7 +71,7 @@ const sanitizeFilename = (filename) => {
 const validateFile = async (buffer) => {
   try {
     const type = await fileTypeFromBuffer(buffer);
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp','image/jpg'];
     const maxSize = 5 * 1024 * 1024;
 
     return (

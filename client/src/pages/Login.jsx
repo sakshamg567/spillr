@@ -1,34 +1,27 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { auth } from '../utils/api'
 
 const Login = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
-      const res = await fetch("http://localhost:3000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        setIsAuthenticated(true);
-        alert("Login Successful");
-      } else {
-        alert(data.message || "Login failed");
-      }
+      const data = await auth.login({ email, password });
+      
+      localStorage.setItem("token", data.token);
+      setIsAuthenticated(true);
+      alert("Login Successful");
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong");
+      console.error('Login error:', err);
+      setError(err.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -38,6 +31,12 @@ const Login = ({ setIsAuthenticated }) => {
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <div className="bg-white shadow-md rounded-lg p-8 w-96">
         <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <input

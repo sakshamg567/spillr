@@ -1,35 +1,28 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { auth } from '../utils/api'
 
 const Register = ({ setIsAuthenticated }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
-      const res = await fetch("http://localhost:3000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        setIsAuthenticated(true);
-        alert("Registration Successful");
-      } else {
-        alert(data.message || "Registration failed");
-      }
+      const data = await auth.register({ name, email, password });
+      
+      localStorage.setItem("token", data.token);
+      setIsAuthenticated(true);
+      alert("Registration Successful");
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong");
+      console.error('Registration error:', err);
+      setError(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -39,6 +32,12 @@ const Register = ({ setIsAuthenticated }) => {
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <div className="bg-white shadow-md rounded-lg p-8 w-96">
         <h2 className="text-2xl font-bold text-center mb-6">Register</h2>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleRegister} className="space-y-4">
           <input
