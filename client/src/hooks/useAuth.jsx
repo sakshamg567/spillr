@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [authMode, setAuthMode] = useState(null);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -59,44 +60,44 @@ export const AuthProvider = ({ children }) => {
       window.removeEventListener('auth-logout', handleAuthLogout);
     };
   }, []);
+  
+const login = useCallback(async (credentials) => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await authService.login(credentials);
+    
+    setUser(response.user);
+    setToken(response.token);
+    
+    return response;
+  } catch (error) {
+    setError(error.message);
+    throw new Error(error.message || 'Login failed');
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
-  const login = useCallback(async (credentials) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await authService.login(credentials);
-      
-      setUser(response.user);
-      setToken(response.token);
-      
-      return response;
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const register = useCallback(async (userData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await authService.register(userData);
-      
-      setUser(response.user);
-      setToken(response.token);
-      
-      return response;
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const register = useCallback(async (userData) => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await authService.register(userData);
+    
+    setUser(response.user);
+    setToken(response.token);
+    
+    return response;
+  } catch (error) {
+    setError(error.message);
+    throw new Error(error.message || 'Registration failed');
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   const logout = useCallback(() => {
     authService.logout();
@@ -114,6 +115,8 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     error,
+    authMode,
+    setAuthMode, 
     isAuthenticated: !!user,
     login,
     register,

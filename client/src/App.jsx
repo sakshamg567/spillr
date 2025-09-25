@@ -1,12 +1,15 @@
 import React from 'react'
-import LandingPage
- from '../components/LandingPage'
+import { AuthProvider } from './hooks/useAuth'
+import LandingPage from './components/LandingPage'
+import './App.css'
+
 const App = () => {
   return (
-    <div>
-      <LandingPage />
-      
-    </div>
+    <AuthProvider>
+      <div>
+        <LandingPage />
+      </div>
+    </AuthProvider>
   )
 }
 

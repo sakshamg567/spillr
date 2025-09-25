@@ -6,6 +6,7 @@ import passport from "../config/passport.js";
 import rateLimit from "express-rate-limit";
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!process.env.JWT_SECRET 
  || process.env.JWT_SECRET 

@@ -1,4 +1,4 @@
-import { apiRequest } from "./api";
+import { apiRequest } from "./api.js";
 
 export const wallService = {
     create: async (wallData) => {
@@ -8,7 +8,8 @@ export const wallService = {
                 body: JSON.stringify(wallData)
             });
         }catch(error){
-            console.error('Create wall error:',error)
+            console.error('Create wall error:',error);
+            throw error;
         }
     },
 
