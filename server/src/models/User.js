@@ -10,6 +10,16 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    username: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true,
+    unique: true,
+    minlength: 3,
+    maxlength: 30,
+    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores']
+  },
     email: {
       type: String,
       required: function () {
@@ -69,9 +79,8 @@ const userSchema = new mongoose.Schema(
     },
     emailNotifications: {
       newFeedback: { type: Boolean, default: true },
-      // newAnswer: { type: Boolean, default: true }, // Consider adding this back if needed
     },
-    // Fields for Account Deletion Confirmation 
+  
     accountDeletionToken: {
       type: String,
       select: false, 
@@ -80,6 +89,9 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false, 
     },
+    resetPasswordToken: String,
+resetPasswordExpires: Date,
+
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],

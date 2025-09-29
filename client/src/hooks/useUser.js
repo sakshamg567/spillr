@@ -1,103 +1,102 @@
 import { useState, useCallback, useEffect } from 'react';
 import { userService } from '../services/userService.js';
 
-export const useUser = () => {
+
+export const useUser = (autoFetch = true) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isOperationPending, setIsOperationPending] = useState(false);
 
   const fetchProfile = useCallback(async () => {
+    if (isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const userData = await userService.getProfile();
       setProfile(userData);
-      
       return userData;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to load profile');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
 
   const updateProfile = useCallback(async (profileData) => {
+    if (isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const updatedUser = await userService.updateProfile(profileData);
       setProfile(updatedUser);
-      
       return updatedUser;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to update profile');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
 
   const uploadProfilePicture = useCallback(async (file) => {
+    if (isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const response = await userService.uploadProfilePicture(file);
-      
-      setProfile(prev => ({
-        ...prev,
-        profilePicture: response.profilePicture
-      }));
-      
+      setProfile(prev => prev ? { ...prev, profilePicture: response.profilePicture } : null);
       return response;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to upload picture');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
 
   const updateNotifications = useCallback(async (settings) => {
+    if (isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const response = await userService.updateNotifications(settings);
-      
-      setProfile(prev => ({
-        ...prev,
-        emailNotifications: response.emailNotifications
-      }));
-      
+      setProfile(prev => prev ? { ...prev, emailNotifications: response.emailNotifications } : null);
       return response;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to update notifications');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
 
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    if (autoFetch) {
+      fetchProfile();
+    }
+  }, [fetchProfile, autoFetch]);
+
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     profile,
     loading,
     error,
-    refetch: fetchProfile,
+    reloadProfile: fetchProfile,
     updateProfile,
     uploadProfilePicture,
     updateNotifications,
-    clearError: () => setError(null)
+    clearError
   };
 };
 
+// ====== Password Change Hook ======
 export const usePasswordChange = () => {
   const [formData, setFormData] = useState({
     oldPassword: '',
@@ -132,17 +131,15 @@ export const usePasswordChange = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (field) => (e) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
+  const handleChange = (field) => (valueOrEvent) => {
+    const value = valueOrEvent?.target?.value !== undefined 
+      ? valueOrEvent.target.value 
+      : valueOrEvent;
+
+    setFormData(prev => ({ ...prev, [field]: value }));
 
     if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
 
     if (success) {
@@ -151,7 +148,7 @@ export const usePasswordChange = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     
     if (!validateForm()) return;
 
@@ -163,28 +160,22 @@ export const usePasswordChange = () => {
       });
       
       setSuccess(true);
-      setFormData({
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      
-    } catch (error) {
-      setErrors({ submit: error.message });
+      setFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setErrors({});
+    } catch (err) {
+      setErrors({ submit: err.message || 'Failed to change password' });
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = useCallback(() => {
-    setFormData({
-      oldPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
+    setFormData({ oldPassword: '', newPassword: '', confirmPassword: '' });
     setErrors({});
     setSuccess(false);
   }, []);
+
+  const clearErrors = useCallback(() => setErrors({}), []);
 
   return {
     formData,
@@ -193,25 +184,34 @@ export const usePasswordChange = () => {
     success,
     handleChange,
     handleSubmit,
-    resetForm
+    resetForm,
+    clearErrors
   };
 };
+
 
 export const useProfileForm = (initialData = {}) => {
   const [formData, setFormData] = useState({
     bio: '',
-    socialLinks: {
-      twitter: '',
-      linkedin: '',
-      website: '',
-      instagram: ''
-    },
-    profileVisibility: 'public',
-    ...initialData
+    socialLinks: { twitter: '', linkedin: '', website: '', instagram: '' },
+    profileVisibility: 'public'
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useUser();
+
+  useEffect(() => {
+    setFormData({
+      bio: initialData.bio || '',
+      socialLinks: {
+        twitter: initialData.socialLinks?.twitter || '',
+        linkedin: initialData.socialLinks?.linkedin || '',
+        website: initialData.socialLinks?.website || '',
+        instagram: initialData.socialLinks?.instagram || ''
+      },
+      profileVisibility: initialData.profileVisibility || 'public'
+    });
+  }, [initialData]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -230,45 +230,36 @@ export const useProfileForm = (initialData = {}) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (field) => (e) => {
-    const value = e.target.value;
-    
+  const handleChange = (field) => (valueOrEvent) => {
+    const value = valueOrEvent?.target?.value !== undefined 
+      ? valueOrEvent.target.value 
+      : valueOrEvent;
+
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
       setFormData(prev => ({
         ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value
-        }
+        [parent]: { ...prev[parent], [child]: value }
       }));
     } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
+      setFormData(prev => ({ ...prev, [field]: value }));
     }
 
     if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e?.preventDefault?.();
     if (!validateForm()) return;
 
     try {
       setLoading(true);
       const result = await updateProfile(formData);
       return result;
-    } catch (error) {
-      setErrors({ submit: error.message });
-      throw error;
+    } catch (err) {
+      setErrors({ submit: err.message || 'Failed to save profile' });
     } finally {
       setLoading(false);
     }
@@ -302,77 +293,46 @@ export const useProfilePictureUpload = () => {
 
       const result = await uploadProfilePicture(file);
       return result;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to upload profile picture');
     } finally {
       setLoading(false);
     }
   };
+
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     loading,
     error,
     handleFileUpload,
-    clearError: () => setError(null)
+    clearError
   };
 };
+
 
 export const useBlockManagement = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const blockUser = async (userId) => {
+  const executeWithLoading = async (apiCall) => {
     try {
       setLoading(true);
       setError(null);
-      return await userService.blockUser(userId);
-    } catch (error) {
-      setError(error.message);
-      throw error;
+      return await apiCall();
+    } catch (err) {
+      setError(err.message || 'Operation failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const blockIP = async (ip) => {
-    try {
-      setLoading(true);
-      setError(null);
-      return await userService.blockIP(ip);
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+  const blockUser = useCallback((userId) => executeWithLoading(() => userService.blockUser(userId)), []);
+  const blockIP = useCallback((ip) => executeWithLoading(() => userService.blockIP(ip)), []);
+  const unblockUser = useCallback((userId) => executeWithLoading(() => userService.unblockUser(userId)), []);
+  const unblockIP = useCallback((ip) => executeWithLoading(() => userService.unblockIP(ip)), []);
 
-  const unblockUser = async (userId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      return await userService.unblockUser(userId);
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const unblockIP = async (ip) => {
-    try {
-      setLoading(true);
-      setError(null);
-      return await userService.unblockIP(ip);
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     loading,
@@ -381,46 +341,37 @@ export const useBlockManagement = () => {
     blockIP,
     unblockUser,
     unblockIP,
-    clearError: () => setError(null)
+    clearError
   };
 };
 
+// ====== Account Deletion Hook ======
 export const useAccountDeletion = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
-  const requestDeletion = async (currentPassword) => {
+  const executeWithLoading = async (apiCall) => {
     try {
       setLoading(true);
       setError(null);
-      
-      const result = await userService.requestAccountDeletion(currentPassword);
-      setSuccess(true);
-      
-      return result;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+      return await apiCall();
+    } catch (err) {
+      setError(err.message || 'Operation failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const confirmDeletion = async (token, userId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const result = await userService.confirmAccountDeletion(token, userId);
-      return result;
-    } catch (error) {
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+  const requestDeletion = useCallback(async (currentPassword) => {
+    const result = await executeWithLoading(() => userService.requestAccountDeletion(currentPassword));
+    setSuccess(true);
+    return result;
+  }, []);
+
+  const confirmDeletion = useCallback(async (token, userId) => {
+    return executeWithLoading(() => userService.confirmAccountDeletion(token, userId));
+  }, []);
 
   const resetState = useCallback(() => {
     setError(null);

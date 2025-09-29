@@ -1,35 +1,36 @@
-import React from "react";
+import React,{ useEffect, useRef } from "react";
 import { useAuth } from "../hooks/useAuth";
 import Navbar from "./Navbar";
 import { ArrowRight } from "lucide-react";
 import RegisterForm from "./auth/RegisterForm";
 import Footer from "./Footer";
 import pastel from "../assets/pastel.jpeg";
+import LoginForm from "./auth/LoginForm";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
+import Loading from './Loading'
 const LandingPage = () => {
-  const { loading, setAuthMode, authMode } = useAuth();
-
-  const handleRegisterClick = () => {
-    console.log("Get Started clicked");
-    setAuthMode("register"); 
-  };
-
-  const handleCloseModal = () => {
-    setAuthMode(null); 
-  };
-
-  const handleRegisterSuccess = () => {
-    setAuthMode(null); 
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+  const { loading, user, isAuthenticated } = useAuth();
+    const navigate = useNavigate();
+   
+  
+if (loading) {
+    return <Loading />;
   }
+ 
+const { setAuthMode, authMode } = useAuth();
 
+  const handleCloseModal = () => setAuthMode(null);
+  const handleRegisterSuccess = () => {
+    setAuthMode(null);
+    navigate("/dashboard", { replace: true });
+  };
+  const handleLoginSuccess = () => {
+    setAuthMode(null);
+    navigate("/dashboard", { replace: true });
+  };
+
+  
   return (
     <div
       className="min-h-screen bg-cover bg-center "
@@ -147,6 +148,19 @@ const LandingPage = () => {
       
       <Footer />
    
+      {authMode === "login" && (
+        <div className="fixed inset-0 bg-white-40 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <LoginForm
+              onSuccess={handleLoginSuccess}
+              onCancel={handleCloseModal}
+              onToggleRegister={() => setAuthMode("register")}
+            />
+          </div>
+        </div>
+      )}
+
+    
       {authMode === "register" && (
         <div className="fixed inset-0 bg-white-40 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-[9999]">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
@@ -158,8 +172,6 @@ const LandingPage = () => {
           </div>
         </div>
       )}
-
-     
     </div>
   );
 };

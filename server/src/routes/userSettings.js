@@ -1,5 +1,5 @@
 import express from 'express';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import  authMiddleware  from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
 import multer from 'multer';
 import crypto from 'crypto';

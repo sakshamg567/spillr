@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useWalls } from '../hooks/useWalls';
-import { Plus, ExternalLink, Settings, MessageCircle, BarChart3, Eye, Archive } from 'lucide-react';
-import CreateWallForm from './walls/CreateWallForm';
-import WallStats from './walls/WallStats';
+import { Plus, ExternalLink, Settings, MessageCircle, BarChart3, Eye, Archive }  from 'lucide-react'
+import CreateWall from './CreateWall';
+import WallStats from './WallStats'
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -29,6 +29,12 @@ const Dashboard = () => {
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
+            <a
+          href="/"
+          className="text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1 transition-colors"
+        >
+          ← Home
+        </a>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 Welcome back, {user?.name}

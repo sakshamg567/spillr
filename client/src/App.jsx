@@ -1,16 +1,35 @@
-import React from 'react'
-import { AuthProvider } from './hooks/useAuth'
-import LandingPage from './components/LandingPage'
-import './App.css'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import AuthRoute from './components/AuthRoute';
+import './App.css';
+import Loading from './components/Loading'
+const Home = lazy(() => import('./pages/Home'))
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const CreateWall = lazy(() => import('./components/CreateWall'));
+const OwnerWallView = lazy(() => import('./components/OwnerWallView'));
+const WallPublic = lazy(() => import('./components/PublicWallView'));
+const Login = lazy(()=> import('./components/auth/LoginForm'))
+const ResetPassword = lazy(() => import('./components/auth/ResetPasswordForm'))
 
-const App = () => {
+
+export default function App(){
   return (
-    <AuthProvider>
-      <div>
-        <LandingPage />
-      </div>
-    </AuthProvider>
-  )
+    <Suspense fallback={<Loading />}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/wall/:wallId" element={<WallPublic />} />
+        
+       
+        <Route element={<AuthRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/wall/:wallId/manage" element={<OwnerWallView />} />
+          <Route path="/wall/create" element={<CreateWall />} />
+        </Route>
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  );
 }
-
-export default App

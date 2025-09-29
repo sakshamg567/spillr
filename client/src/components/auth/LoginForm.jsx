@@ -2,14 +2,16 @@ import React, { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { validateEmail, validateLoginPassword } from "../../utils/validation";
 import { useAuth } from "../../hooks/useAuth";
+import ForgotPasswordForm from "../auth/ForgotPasswordForm";
 
-const LoginForm = ({ onSuccess, onToggleRegister, onCancel, onForgotPassword }) => {
-  const { initiateGoogleAuth, login } = useAuth();
-
+const LoginForm = ({ onSuccess, onToggleRegister, onCancel }) => {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const validate = () => {
     const newErrors = {};
@@ -39,11 +41,14 @@ const LoginForm = ({ onSuccess, onToggleRegister, onCancel, onForgotPassword }) 
     setLoading(true);
     setErrors({});
     try {
-      await login({ email: formData.email, password: formData.password });
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      });
 
-      console.log("Login successful:", formData.email);
-      if (onSuccess) onSuccess();
-      // navigate("/dashboard"); // ✅ redirect after email login - removed to fix Router error
+      if (response && onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.error("Login error:", error);
       setErrors({
@@ -54,29 +59,18 @@ const LoginForm = ({ onSuccess, onToggleRegister, onCancel, onForgotPassword }) 
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await initiateGoogleAuth();
-      // navigate("/dashboard"); // ✅ redirect after Google login - removed to fix Router error
-    } catch (error) {
-      console.error("Google Sign-In failed:", error);
-      setErrors({
-        submit: "Google sign-in failed. Please try again.",
-      });
-    }
+  const handleForgotPassword = () => {
+    setShowForgotPassword(true);
   };
 
-  const handleForgotPassword = () => {
-    if (onForgotPassword) {
-      onForgotPassword(formData.email);
-    } else {
-      alert(
-        `Forgot Password functionality not implemented yet. ${
-          formData.email ? `Email: ${formData.email}` : "Please enter your email first."
-        }`
-      );
-    }
+  const closeForgotPassword = () => {
+    setShowForgotPassword(false);
   };
+
+  // === RENDER ===
+  if (showForgotPassword) {
+    return <ForgotPasswordForm onCancel={closeForgotPassword} />;
+  }
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -103,7 +97,7 @@ const LoginForm = ({ onSuccess, onToggleRegister, onCancel, onForgotPassword }) 
               </div>
             )}
 
-            {/* Email Input */}
+            {/* Email */}
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <input
@@ -119,7 +113,7 @@ const LoginForm = ({ onSuccess, onToggleRegister, onCancel, onForgotPassword }) 
               )}
             </div>
 
-            {/* Password Input */}
+            {/* Password */}
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground " />
               <input
@@ -157,58 +151,27 @@ const LoginForm = ({ onSuccess, onToggleRegister, onCancel, onForgotPassword }) 
               </button>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-black hover:bg-gray-800 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors cursor-pointer "
+              className="w-full h-12 bg-black hover:bg-gray-800 disabled:bg-gray-600 text-white font-medium rounded-md transition-colors cursor-pointer"
             >
-              {loading ? (
-                <div className="flex items-center space-x-2 justify-center">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Signing In...</span>
-                </div>
-              ) : (
-                "Log In"
-              )}
+              {loading ? "Signing in..." : "Log In"}
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="flex items-center">
-            <div className="flex-grow border-t border-border"></div>
-            <span className="px-4 text-sm text-muted-foreground">
-              Or sign in with
-            </span>
-            <div className="flex-grow border-t border-border"></div>
-          </div>
-
-          {/* Google Sign-in */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleGoogleSignIn}
-              className="w-12 h-10 flex items-center justify-center cursor-pointer"
-            >
-              <img
-                src="/src/assets/google-icon-svg-download-png-7683441.webp"
-                alt="Google"
-              />
-            </button>
-          </div>
-
           {/* Toggle Register */}
-          {onToggleRegister && (
-            <p className="text-center text-sm  mt-4">
-              Don't have an account?{" "}
-              <button
-                type="button"
-                onClick={onToggleRegister}
-                className=" hover:underline font-medium underline"
-              >
-                Sign up
-              </button>
-            </p>
-          )}
+          <p className="text-center text-sm mt-4">
+            Don't have an account?{" "}
+            <button
+              type="button"
+              onClick={onToggleRegister}
+              className="hover:underline font-medium underline"
+            >
+              Sign up
+            </button>
+          </p>
 
           {/* Cancel */}
           {onCancel && (

@@ -1,7 +1,12 @@
-import { useState, useEffect, useCallback, useContext, createContext } from 'react';
-import { authService } from '../services/authService.js';
+import { useState, useEffect, useCallback, useContext, createContext, useRef } from 'react';
+import Loading from '../components/Loading.jsx'
 
 const AuthContext = createContext();
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
+
+if (!API_BASE_URL) {
+  throw new Error("VITE_API_BASE_URL must be set in .env");
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -9,106 +14,149 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [authMode, setAuthMode] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        setLoading(true);
-        const storedToken = authService.getToken();
-        const storedUser = authService.getCurrentUser();
+  const fetchUser = useCallback(async () => {
+    if (isLoggingOut) {
+      setLoading(false);
+      return;
+    }
 
-        if (storedToken) {
-          setToken(storedToken);
-          setUser(storedUser);
-          
-          const isValid = await authService.verifyToken();
-          if (!isValid) {
-            setUser(null);
-            setToken(null);
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        credentials: 'include' 
+      });
+      
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+        setError(null);
+      } else if (res.status === 401) {
+        // Unauthorized - clear user state
         setUser(null);
-        setToken(null);
-      } finally {
-        setLoading(false);
+        setError(null);
+      } else {
+        // Other error
+        console.error('Failed to fetch user, status:', res.status);
+        setUser(null);
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch user:', err);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [isLoggingOut]);
 
-    initializeAuth();
+  const login = useCallback(async (credentials) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(credentials)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const message = errorData.message || 'Login failed';
+        setError(message);
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+      setUser(data.user);
+      setError(null);
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => {
-    const handleAuthExpired = () => {
-      setUser(null);
-      setToken(null);
-      setError('Your session has expired. Please log in again.');
-    };
+  const register = useCallback(async (userData) => {
+    try {
+      setError(null);
+      setLoading(true);
 
-    const handleAuthLogout = () => {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(userData)
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const message = errorData.message || 'Registration failed';
+        setError(message);
+        throw new Error(message);
+      }
+
+      const data = await res.json();
+      setUser(data.user);
+      setError(null);
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      setIsLoggingOut(true);
+      setError(null);
+      
+      // Call logout endpoint
+      const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      // Always clear local state regardless of server response
       setUser(null);
       setToken(null);
       setError(null);
-    };
+      setAuthMode(null);
 
-    window.addEventListener('auth-expired', handleAuthExpired);
-    window.addEventListener('auth-logout', handleAuthLogout);
+      // Clear any localStorage items that might exist
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
 
-    return () => {
-      window.removeEventListener('auth-expired', handleAuthExpired);
-      window.removeEventListener('auth-logout', handleAuthLogout);
-    };
-  }, []);
-  
-const login = useCallback(async (credentials) => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    const response = await authService.login(credentials);
-    
-    setUser(response.user);
-    setToken(response.token);
-    
-    return response;
-  } catch (error) {
-    setError(error.message);
-    throw new Error(error.message || 'Login failed');
-  } finally {
-    setLoading(false);
-  }
-}, []);
-
-const register = useCallback(async (userData) => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    const response = await authService.register(userData);
-    
-    setUser(response.user);
-    setToken(response.token);
-    
-    return response;
-  } catch (error) {
-    setError(error.message);
-    throw new Error(error.message || 'Registration failed');
-  } finally {
-    setLoading(false);
-  }
-}, []);
-
-  const logout = useCallback(() => {
-    authService.logout();
-    setUser(null);
-    setToken(null);
-    setError(null);
+      console.log('Logout completed');
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local state even if server request failed
+      setUser(null);
+      setToken(null);
+      setError(null);
+      setAuthMode(null);
+    } finally {
+      setIsLoggingOut(false);
+    }
   }, []);
 
   const clearError = useCallback(() => {
     setError(null);
   }, []);
+
+  // Initial user fetch
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  
 
   const value = {
     user,
@@ -122,8 +170,7 @@ const register = useCallback(async (userData) => {
     register,
     logout,
     clearError,
-    initiateGoogleAuth: authService.initiateGoogleAuth,
-    handleOAuthCallback: authService.handleOAuthCallback
+    refetchUser: fetchUser
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -142,7 +189,7 @@ export const withAuth = (Component) => {
     const { isAuthenticated, loading } = useAuth();
 
     if (loading) {
-      return <div>Loading...</div>;
+      return <Loading />;
     }
 
     if (!isAuthenticated) {
@@ -160,7 +207,7 @@ export const useLoginForm = () => {
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, clearError } = useAuth();
 
   const validateForm = () => {
     const newErrors = {};
@@ -185,12 +232,24 @@ export const useLoginForm = () => {
       [field]: e.target.value
     }));
     
+    // Clear field-specific errors
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
         [field]: ''
       }));
     }
+
+    // Clear submit errors
+    if (errors.submit) {
+      setErrors(prev => ({
+        ...prev,
+        submit: ''
+      }));
+    }
+
+    // Clear global auth errors
+    clearError();
   };
 
   const handleSubmit = async (e) => {
@@ -200,6 +259,7 @@ export const useLoginForm = () => {
 
     try {
       setLoading(true);
+      setErrors({});
       await login(formData);
     } catch (error) {
       setErrors({ submit: error.message });
@@ -220,13 +280,14 @@ export const useLoginForm = () => {
 export const useRegisterForm = () => {
   const [formData, setFormData] = useState({
     name: '',
+    username:'',
     email: '',
     password: '',
     confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, clearError } = useAuth();
 
   const validateForm = () => {
     const newErrors = {};
@@ -235,6 +296,16 @@ export const useRegisterForm = () => {
       newErrors.name = 'Name is required';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Name must be at least 2 characters';
+    }
+
+     if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.trim().length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    } else if (formData.username.trim().length > 30) {
+      newErrors.username = 'Username must be less than 30 characters';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username.trim())) {
+      newErrors.username = 'Username can only contain letters, numbers, and underscores';
     }
 
     if (!formData.email.trim()) {
@@ -263,25 +334,44 @@ export const useRegisterForm = () => {
       [field]: e.target.value
     }));
     
+    // Clear field-specific errors
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
         [field]: ''
       }));
     }
+  
+    // Clear submit errors
+    if (errors.submit) {
+      setErrors(prev => ({
+        ...prev,
+        submit: ''
+      }));
+    }
+
+    // Clear global auth errors
+    clearError();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return Promise.reject(new Error('Validation failed'));
+    }
 
     try {
       setLoading(true);
+      setErrors({});
+      
       const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
+      const response = await register(registerData);
+      
+      return response;
     } catch (error) {
       setErrors({ submit: error.message });
+      throw error;
     } finally {
       setLoading(false);
     }

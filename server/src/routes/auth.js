@@ -1,23 +1,38 @@
+import crypto from "crypto";
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import passport from "../config/passport.js";
 import rateLimit from "express-rate-limit";
-
+import authMiddleware from "../middleware/authMiddleware.js";
+import sendEmail from "../utils/sendEmail.js";
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
 
-if (!process.env.JWT_SECRET 
- || process.env.JWT_SECRET 
-.length < 20) {
-  console.error(" JWT_SECRET must be at least 20 characters long");
-  process.exit(1);
-}
+const getJWTSecret = () => {
+  const JWT_SECRET = process.env.JWT_SECRET;
+  
+  if (!JWT_SECRET || JWT_SECRET.length < 20) {
+    console.error("JWT_SECRET must be at least 20 characters long");
+    console.error("Current JWT_SECRET length:", JWT_SECRET?.length || 0);
+    throw new Error("Invalid JWT_SECRET configuration");
+  }
+  
+  return JWT_SECRET;
+};
+
+const setTokenCookie = (res, token) => {
+  res.cookie("token", token, {
+    httpOnly: true,           
+    secure: process.env.NODE_ENV === "production", 
+    sameSite: "lax",          
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
+    path: "/"               
+  });
+};
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per 15 minutes per IP
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: { message: "Too many authentication attempts, try again later" },
   skipSuccessfulRequests: true
 });
@@ -25,6 +40,14 @@ const authLimiter = rateLimit({
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email) && email.length <= 254;
+};
+
+const validateUsername = (username) => {
+  return username &&
+         typeof username === 'string' &&
+         username.trim().length >= 3 &&
+         username.trim().length <= 30 &&
+         /^[a-zA-Z0-9_]+$/.test(username);
 };
 
 const validatePassword = (password) => {
@@ -42,13 +65,50 @@ const validateName = (name) => {
          name.trim().length <= 50;
 };
 
+// Health check route
+router.get("/health", (req, res) => {
+  try {
+    const JWT_SECRET = getJWTSecret();
+    res.json({ 
+      status: "ok", 
+      jwt_configured: !!JWT_SECRET,
+      message: "Auth service is running"
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: "error", 
+      message: error.message 
+    });
+  }
+});
 
+// Get current user
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    res.json({
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      username: req.user.username
+    });
+  } catch (err) {
+    console.error("Me route error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Register new user
 router.post("/register", authLimiter, async (req, res) => {
   try {
-    const { name: rawName, email: rawEmail, password } = req.body;
+    const { name: rawName, email: rawEmail, password, username: rawUsername } = req.body;
     const name = rawName?.trim();
     const email = rawEmail?.trim();
+    const username = rawUsername?.trim();
 
+    // Validation
     if (!validateName(name)) {
       return res.status(400).json({ 
         message: "Name must be 2-50 characters long" 
@@ -59,6 +119,12 @@ router.post("/register", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
+    if (!validateUsername(username)) { 
+      return res.status(400).json({ 
+        message: "Username must be 3-30 characters and contain only letters, numbers, and underscores" 
+      });
+    }
+
     if (!validatePassword(password)) {
       return res.status(400).json({ 
         message: "Password must be 8-128 characters with uppercase, lowercase, and number" 
@@ -66,33 +132,60 @@ router.post("/register", authLimiter, async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase();
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [
+        { email: normalizedEmail },
+        { username: username }
+      ]
+    });
+    
     if (existingUser) {
-      return res.status(400).json({ message: "Email already in use" });
+      if (existingUser.email === normalizedEmail) {
+        return res.status(400).json({ message: "Email already in use" });
+      } else {
+        return res.status(400).json({ message: "Username already in use" });
+      }
     }
 
+    // Create new user
     const passwordHash = await User.hashPassword(password);
     const newUser = await User.create({
       name,
       email: normalizedEmail,
+      username,
       passwordHash,
     });
 
+    // Create JWT token
+    const JWT_SECRET = getJWTSecret();
     const token = jwt.sign(
       { id: newUser._id, email: normalizedEmail }, 
       JWT_SECRET, 
       { expiresIn: "7d" }
     );
 
+    setTokenCookie(res, token);
+
+    console.log("Registration successful for:", normalizedEmail);
+
     res.status(201).json({
-      token,
-      user: { id: newUser._id, name, email: normalizedEmail },
+      message: "Registration successful",
+      user: { 
+        id: newUser._id, 
+        name, 
+        email: normalizedEmail,
+        username 
+      },
     });
   } catch (err) {
+    console.error("Registration error:", err);
     res.status(500).json({ message: "Registration failed" });
   }
 });
 
+// Login user
 router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email: rawEmail, password } = req.body;
@@ -109,10 +202,9 @@ router.post("/login", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    
     if (!user.passwordHash) {
       return res.status(400).json({ 
-        message: "Please login with Google or reset your password" 
+        message: "Please reset your password" 
       });
     }
 
@@ -121,57 +213,140 @@ router.post("/login", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
+    // Create JWT token
+    const JWT_SECRET = getJWTSecret();
     const token = jwt.sign(
       { id: user._id, email: normalizedEmail }, 
       JWT_SECRET, 
       { expiresIn: "7d" }
     );
    
+    setTokenCookie(res, token);
+
+    console.log("Login successful for:", normalizedEmail);
+
     res.status(200).json({
-      token,
-      user: { id: user._id, name: user.name, email: normalizedEmail },
+      message: "Login successful",
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: normalizedEmail,
+        username: user.username 
+      },
     });
   } catch (err) {
+    console.error("Login error:", err);
     res.status(500).json({ message: "Login failed" });
   }
 });
 
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
 
+  if (!email) return res.status(400).json({ message: "Email is required" });
 
-router.get(
-  "/google/callback",
-  (req, res, next) => {
-    passport.authenticate("google", (err, user, info) => {
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      
-      if (err) {
-        console.error("Google OAuth error:", err);
-        return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
-      }
-      
-      if (!user) {
-        console.error("No user returned from Google OAuth:", info);
-        return res.redirect(`${frontendUrl}/login?error=no_user`);
-      }
-      
-      // Log in the user
-      req.logIn(user, (loginErr) => {
-        if (loginErr) {
-          console.error("Login error after OAuth:", loginErr);
-          return res.redirect(`${frontendUrl}/login?error=login_failed`);
-        }
-        
-        // Generate JWT token
-        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
-        
-        res.redirect(`${frontendUrl}/dashboard?token=${token}`);
-      });
-    })(req, res, next);
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const resetURL = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    const message = `
+      <p>You requested a password reset.</p>
+      <p>Click this link to reset your password:</p>
+      <a href="${resetURL}">${resetURL}</a>
+    `;
+
+    await sendEmail({
+      to: user.email,
+      subject: "Password Reset Request",
+      html: message
+    });
+
+    res.status(200).json({ message: "Reset link sent to your email" });
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ message: "Server error" });
   }
-);
+});
+
+router.post("/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ message: "Token and password are required" });
+  }
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    user.passwordHash = await bcrypt.hash(password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    const authToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+     res.json({ 
+      message: 'Password reset successful',
+      token: authToken,
+      user: { id: user._id, email: user.email, name: user.name }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Verify reset token
+router.get("/verify-reset-token/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }, 
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired reset link" });
+    }
+
+    res.status(200).json({ email: user.email });
+  } catch (err) {
+    console.error("Verify reset token error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Logout user
+router.post("/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/"
+  });
+  
+  console.log("User logged out");
+  res.status(200).json({ message: "Logged out successfully" });
+});
 
 export default router;

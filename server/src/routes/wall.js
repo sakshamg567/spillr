@@ -1,7 +1,8 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import Wall from "../models/Wall.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+
 
 const router = express.Router();
 

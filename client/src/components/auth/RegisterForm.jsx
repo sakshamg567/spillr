@@ -1,24 +1,29 @@
 import React from "react";
-import { Mail, Lock, User, Eye, EyeOff, Chrome } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Chrome, AtSign } from "lucide-react";
 import { useRegisterForm } from "../../hooks/useAuth";
+import { useState } from "react";
+const RegisterForm = ({
+  onSuccess,
+  onToggleLogin,
+  onCancel,
+  onForgotPassword,
+}) => {
+  const { formData, errors, loading, handleChange, handleSubmit } =
+    useRegisterForm();
 
-const RegisterForm = ({ onSuccess, onToggleLogin, onCancel, onForgotPassword }) => {
-  const {
-    formData,
-    errors,
-    loading,
-    handleChange,
-    handleSubmit
-  } = useRegisterForm();
-
-  // Wrap handleSubmit to include success callback
   const handleRegister = async (e) => {
-    await handleSubmit(e);
-    if (!errors.submit) {
-      if (onSuccess) onSuccess(); // close modal
-      // navigate("/dashboard"); // redirect - removed to fix Router error
+    e.preventDefault();
+
+    try {
+      await handleSubmit(e); // Will throw if registration failed
+      console.log("Registration successful, calling onSuccess callback");
+      if (onSuccess) onSuccess();
+    } catch (error) {
+      console.error("Registration error:", error);
     }
   };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -26,7 +31,9 @@ const RegisterForm = ({ onSuccess, onToggleLogin, onCancel, onForgotPassword }) 
         {/* Header */}
         <div className="flex flex-col space-y-1.5 p-6 text-center space-y-4 pb-8">
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold text-foreground">Create your account</h1>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Create your account
+            </h1>
             <p className="text-muted-foreground text-sm">
               Join us and start your journey today
             </p>
@@ -55,7 +62,29 @@ const RegisterForm = ({ onSuccess, onToggleLogin, onCancel, onForgotPassword }) 
                   required
                 />
               </div>
-              {errors.name && <p className="text-destructive text-sm mt-1">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-destructive text-sm mt-1">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Username Input */}
+            <div className="space-y-2">
+              <div className="relative">
+                <AtSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={formData.username}
+                  onChange={handleChange("username")}
+                  className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  required
+                />
+              </div>
+              {errors.username && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.username}
+                </p>
+              )}
             </div>
 
             {/* Email Input */}
@@ -70,8 +99,11 @@ const RegisterForm = ({ onSuccess, onToggleLogin, onCancel, onForgotPassword }) 
                   className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
+                
               </div>
-              {errors.email && <p className="text-destructive text-sm mt-1">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-destructive text-sm mt-1">{errors.email}</p>
+              )}
             </div>
 
             {/* Password Input */}
@@ -79,15 +111,30 @@ const RegisterForm = ({ onSuccess, onToggleLogin, onCancel, onForgotPassword }) 
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={formData.password}
                   onChange={handleChange("password")}
-                  className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 pr-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
-              {errors.password && <p className="text-destructive text-sm mt-1">{errors.password}</p>}
+              {errors.password && (
+                <p className="text-destructive text-sm mt-1">
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             {/* Confirm Password Input */}
@@ -95,16 +142,29 @@ const RegisterForm = ({ onSuccess, onToggleLogin, onCancel, onForgotPassword }) 
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm Password"
                   value={formData.confirmPassword}
                   onChange={handleChange("confirmPassword")}
-                  className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 pr-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5" />
+                  ) : (
+                    <Eye className="h-5 w-5" />
+                  )}
+                </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-destructive text-sm mt-1">{errors.confirmPassword}</p>
+                <p className="text-destructive text-sm mt-1">
+                  {errors.confirmPassword}
+                </p>
               )}
             </div>
 

@@ -5,62 +5,58 @@ export const useWalls = () => {
   const [walls, setWalls] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+  const [isOperationPending, setIsOperationPending] = useState(false);
 
   const createWall = useCallback(async (wallData) => {
+    if (isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const newWall = await wallService.create(wallData);
       setWalls(prev => [...prev, newWall]);
-      
       return newWall;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to create wall');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
+
 
   const getWall = useCallback(async (slug) => {
+    if (!slug) return null;
     try {
       setLoading(true);
       setError(null);
-      
       const wall = await wallService.getBySlug(slug);
       return wall;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to load wall');
     } finally {
       setLoading(false);
     }
   }, []);
 
   const updateWallTheme = useCallback(async (slug, themeData) => {
+    if (isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const updatedWall = await wallService.updateTheme(slug, themeData);
-      
-      setWalls(prev => prev.map(wall => 
-        wall.slug === slug ? updatedWall : wall
-      ));
-      
+      setWalls(prev => prev.map(wall => wall.slug === slug ? updatedWall : wall));
       return updatedWall;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to update theme');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
+
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     walls,
@@ -77,48 +73,47 @@ export const useWall = (slug) => {
   const [wall, setWall] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isOperationPending, setIsOperationPending] = useState(false);
 
   const fetchWall = useCallback(async () => {
-    if (!slug) return;
-    
+    if (!slug || isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const wallData = await wallService.getBySlug(slug);
       setWall(wallData);
-      
       return wallData;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to load wall');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, [slug]);
+  }, [slug, isOperationPending]);
 
   const updateTheme = useCallback(async (themeData) => {
-    if (!slug) return;
-    
+    if (!slug || isOperationPending) return;
+    setIsOperationPending(true);
     try {
       setLoading(true);
       setError(null);
-      
       const updatedWall = await wallService.updateTheme(slug, themeData);
       setWall(updatedWall);
-      
       return updatedWall;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+    } catch (err) {
+      setError(err.message || 'Failed to update theme');
     } finally {
       setLoading(false);
+      setIsOperationPending(false);
     }
-  }, [slug]);
+  }, [slug, isOperationPending]);
 
   useEffect(() => {
     fetchWall();
   }, [fetchWall]);
+
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     wall,
@@ -126,14 +121,13 @@ export const useWall = (slug) => {
     error,
     refetch: fetchWall,
     updateTheme,
-    clearError: () => setError(null)
+    clearError
   };
 };
 
+// ====== Wall Creation Form ======
 export const useWallCreationForm = () => {
-  const [formData, setFormData] = useState({
-    slug: ''
-  });
+  const [formData, setFormData] = useState({ slug: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -145,29 +139,19 @@ export const useWallCreationForm = () => {
 
   const validateForm = () => {
     const validation = wallService.validateSlug(formData.slug);
-    
     if (!validation.isValid) {
       setErrors({ slug: validation.error });
       return false;
     }
-    
     setErrors({});
     return true;
   };
 
   const handleChange = (field) => (e) => {
     const value = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -177,21 +161,17 @@ export const useWallCreationForm = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
+    e?.preventDefault?.();
     if (!validateForm()) return;
 
     try {
       setLoading(true);
       const wall = await createWall(formData);
-      
       setFormData({ slug: '' });
       setSuggestions(wallService.generateSlugSuggestions());
-      
       return wall;
-    } catch (error) {
-      setErrors({ submit: error.message });
-      throw error;
+    } catch (err) {
+      setErrors({ submit: err.message || 'Failed to create wall' });
     } finally {
       setLoading(false);
     }
@@ -217,14 +197,11 @@ export const useWallThemes = () => {
     try {
       setLoading(true);
       setError(null);
-      
       const themesData = await wallService.getAvailableThemes();
-      setThemes(themesData.themes);
-      
-      return themesData.themes;
-    } catch (error) {
-      setError(error.message);
-      throw error;
+      setThemes(themesData.themes || []);
+      return themesData.themes || [];
+    } catch (err) {
+      setError(err.message || 'Failed to load themes');
     } finally {
       setLoading(false);
     }
@@ -234,11 +211,14 @@ export const useWallThemes = () => {
     fetchThemes();
   }, [fetchThemes]);
 
+  const clearError = useCallback(() => setError(null), []);
+
   return {
     themes,
     loading,
     error,
-    refetch: fetchThemes
+    refetch: fetchThemes,
+    clearError
   };
 };
 
@@ -251,25 +231,26 @@ export const useCustomColors = (initialColors = {}) => {
   });
   const [errors, setErrors] = useState([]);
 
-  const updateColor = useCallback((colorType, value) => {
+ 
+  useEffect(() => {
     setColors(prev => ({
-      ...prev,
-      [colorType]: value
+      primary: initialColors.primary || prev.primary,
+      background: initialColors.background || prev.background,
+      accent: initialColors.accent || prev.accent
     }));
-    
-    const validation = wallService.validateCustomColors({
-      ...colors,
-      [colorType]: value
+  }, [initialColors]);
+
+  const updateColor = useCallback((colorType, value) => {
+    setColors(prev => {
+      const newColors = { ...prev, [colorType]: value };
+      const validation = wallService.validateCustomColors(newColors);
+      setErrors(validation.errors || []);
+      return newColors;
     });
-    setErrors(validation.errors);
-  }, [colors]);
+  }, []);
 
   const resetColors = useCallback(() => {
-    setColors({
-      primary: '',
-      background: '',
-      accent: ''
-    });
+    setColors({ primary: '', background: '', accent: '' });
     setErrors([]);
   }, []);
 

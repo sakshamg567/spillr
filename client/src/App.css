@@ -1,9 +1,25 @@
 @import "tailwindcss";
 
+@keyframes slide-up-onload {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 
-
-
-
+.animate-slide-up {
+  animation: slide-up-onload 0.7s ease-out forwards;
+}
+.delay-100 {
+  animation-delay: 0.1s;
+}
+.delay-200 {
+  animation-delay: 0.2s;
+}
 
 .poster-text {
   font-family: "Times New Roman", serif;

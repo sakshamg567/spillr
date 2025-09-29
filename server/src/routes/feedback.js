@@ -1,7 +1,8 @@
 import express from "express";
-import Feedback from '../models/feedback.js';
+import Feedback from '../models/Feedback.js';
 import Wall from "../models/Wall.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import authMiddleware from "../middleware/authMiddleware.js";
+
 import validator from 'validator';
 import mongoose from 'mongoose'
 import rateLimit from "express-rate-limit"; 
