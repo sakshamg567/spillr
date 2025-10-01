@@ -93,7 +93,7 @@ const Footer = () => {
 
   return (
 
- <footer className="pt-12" >
+ <footer  >
       <div className=" mx-auto px-6 py-8 text-gray-100 bg-gray-500">
         {/* Footer Top */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-6 md:gap-0">

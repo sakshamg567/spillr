@@ -71,11 +71,9 @@ const Home = () => {
 
   return (
     <motion.div className="min-h-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <main>
-        <section
-          className="flex items-center justify-center min-h-screen bg-cover bg-center "
-          style={{ backgroundImage: `url(${blue})` }}
-        >
+      <main> 
+        <section className="flex items-center justify-center min-h-screen bg-cover bg-center">
+        
           <motion.header
             className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 "
             initial={{ opacity: 0, y: -20 }}
@@ -213,6 +211,7 @@ const Home = () => {
               )}
             </motion.div>
           </motion.div>
+          
         </section>
         <motion.div
           className="w-full px-6 py-12 flex items-center justify-center"
@@ -250,7 +249,7 @@ const Home = () => {
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
                 whileHover={{ y: -6 }}
-                className="flex flex-col bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-card border border-border/50 transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg"
+                className="flex flex-col bg-card/80 backdrop-blur-sm p-6 rounded-2xl shadow-card border border-border/50 transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg bg-green-100"
               >
                 <motion.div
                   className="gradient-primary p-3 rounded-xl w-fit mb-4"
@@ -351,7 +350,8 @@ const Home = () => {
           </motion.div>
         </motion.div>
         {/* How It Works Section */}
-<section className="py-24 bg-center bg-cover" style={{ backgroundImage: `url(${turquoise})` }}>
+<section className="py-24 bg-center bg-cover"
+>
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     {/* Header */}
     <div className="text-center mb-16">
@@ -407,6 +407,7 @@ const Home = () => {
   
 </section>
 <Footer />
+
       </main>
 
     </motion.div>

@@ -10,7 +10,7 @@ const OwnerWallView = lazy(() => import('./components/OwnerWallView'));
 const WallPublic = lazy(() => import('./components/PublicWallView'));
 const Login = lazy(()=> import('./components/auth/LoginForm'))
 const ResetPassword = lazy(() => import('./components/auth/ResetPasswordForm'))
-
+const Setting = lazy(()=>import ('./components/UserSettings'))
 
 export default function App(){
   return (
@@ -24,7 +24,7 @@ export default function App(){
        
         <Route element={<AuthRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/wall/:wallId/manage" element={<OwnerWallView />} />
+          <Route path="/settings" element={< Setting/>} />
           <Route path="/wall/create" element={<CreateWall />} />
         </Route>
         
