@@ -3,7 +3,7 @@ import { apiRequest } from "./api.js";
 export const wallService = {
     create: async (wallData) => {
         try{
-            return await apiRequest('/wall',{
+            return await apiRequest('/api/wall',{
                 method: 'POST',
                 body: JSON.stringify(wallData)
             });
@@ -15,7 +15,7 @@ export const wallService = {
 
    getBySlug: async (slug) => {
     try {
-      return await apiRequest(`/wall/${slug}`);
+      return await apiRequest(`/api/wall/${slug}`);
     } catch (error) {
       console.error('Get wall error:', error);
       throw error;
@@ -24,7 +24,7 @@ export const wallService = {
 
   updateTheme: async (slug, themeData) => {
     try {
-      return await apiRequest(`/wall/${slug}/theme`, {
+      return await apiRequest(`/api/wall/${slug}/theme`, {
         method: 'PATCH',
         body: JSON.stringify(themeData)
       });
@@ -36,7 +36,7 @@ export const wallService = {
 
   getAvailableThemes: async () => {
     try {
-      return await apiRequest('/wall/themes/available');
+      return await apiRequest('/api/wall/themes/available');
     } catch (error) {
       console.error('Get themes error:', error);
       throw error;

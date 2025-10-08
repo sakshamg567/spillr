@@ -1,21 +1,24 @@
 import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth"; 
 import ProfileCard from "./ProfileCard";
-export default function MobileGlassNavbar() {
+import { useNavigate } from "react-router-dom";
+import Feedback from "./Feedback";
+
+
+export default function Navbar() {
   const { user, logout, setAuthMode } = useAuth(); 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeItem, setActiveItem] = useState(!!user ? "Messages" : "Register"); 
-
+  const navigate = useNavigate();
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  
   const getNavItems = (isLoggedIn) => {
-    const baseItems = []; 
+  const baseItems = []; 
 
     if (isLoggedIn) {
       return [
         ...baseItems,
         { label: "Messages", onClick: () => setActiveItem("Messages"), href: "#messages" },
-        { label: "Settings", onClick: () => setActiveItem("Settings"), href: "#settings" },
+        { label: "Settings", onClick: () => navigate("/settings"), href: "#settings" },
         { label: "Logout", onClick: logout, href: "#logout" },
       ];
     } else {
@@ -36,10 +39,10 @@ export default function MobileGlassNavbar() {
   };
 
   return (
-    <div>
+    <div >
     <header className="fixed top-0 w-full z-50 shadow-lg 
                        bg-gray-800/50 backdrop-blur-md 
-                       border-b border-white/10 transition-all duration-300">
+                       border-b border-white/10 transition-all duration-300 ">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -106,7 +109,12 @@ export default function MobileGlassNavbar() {
         </div>
       </div>
     </header>
-    <ProfileCard />
+   <div className="pt-20">
+  <ProfileCard />
+</div>
+
+<Feedback />
+
     </div>
   );
 }

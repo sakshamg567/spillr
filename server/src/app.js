@@ -19,26 +19,44 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? process.env.FRONTEND_URL?.split(",") || []
+  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"];
+
+
+app.use(
+  cors({
+    origin: function(origin, callback) {
+     
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(null, true); 
+      }
+    },
+    methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
+    credentials: true,
+    optionsSuccessStatus: 200,
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+  })
+);
+
+
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false,
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
-        fontSrc: ["'self'", "https:", "data:"],
-      },
-    },
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false, // DISABLE THIS
+    contentSecurityPolicy: false, // DISABLE CSP FOR NOW
     frameguard: { action: "deny" },
-    hsts: { maxAge: 31536000 },
+    hsts: false 
   })
 );
 
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
   message: { message: "Too many requests, please try again later" },
   standardHeaders: true,
@@ -47,29 +65,32 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-
-app.use(
-  cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? process.env.FRONTEND_URL?.split(",") || []
-        : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"],
-    credentials: true,
-    optionsSuccessStatus: 200,
-  })
-);
-
 app.use(express.json({ limit: "1mb" }));
-app.use(cookieParser()); 
+app.use(cookieParser());
 
 
 const uploadsPath = path.join(__dirname, "uploads");
+
+app.use("/uploads", (req, res, next) => {
+  
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*"); // Allow all in dev
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  next();
+});
+
 app.use("/uploads", express.static(uploadsPath, {
   maxAge: "1d",
-  setHeaders: (res, path) => {
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("Content-Disposition", "inline");
-  },
+  setHeaders: (res, filePath) => {
+    res.setHeader("Cache-Control", "public, max-age=86400");
+  }
 }));
 
 
@@ -78,11 +99,13 @@ app.use("/api/wall", wallRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/settings", userSettings);
 
+
 app.use((req, res, next) => {
   if (!res.headersSent) {
     res.status(404).json({ message: "Route not found" });
   }
 });
+
 
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err.message);

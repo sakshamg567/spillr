@@ -1,18 +1,34 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useUser } from "../hooks/useUser";
 import { useAuth } from "../hooks/useAuth";
 import { FaCheckCircle, FaEdit, FaShareAlt } from "react-icons/fa";
+
 const ProfileCard = () => {
   const { profile, loading, updateProfile, isOperationPending } = useUser();
-  const { user } = useAuth(); // <-- Get current logged-in user info
+  const { user } = useAuth();
 
   const userName = profile?.name || user?.name || "User";
   const sharedLink =
     profile?.profileUrl ||
     profile?.dashboardLink ||
     user?.profileLink ||
-    (user?.username ? `${window.location.origin}/${user.username}` : window.location.origin);
-  const avatarUrl = profile?.avatarUrl || profile?.profilePicture || user?.avatarUrl || null;
+    (user?.username
+      ? `${window.location.origin}/${user.username}`
+      : window.location.origin);
+
+  // Memoize avatar URL calculation to prevent unnecessary recalculations
+  const avatarUrl = useMemo(() => {
+    if (profile?.avatarUrl) {
+      return profile.avatarUrl;
+    } else if (profile?.profilePicture) {
+      return profile.profilePicture.startsWith("http")
+        ? profile.profilePicture
+        : `${import.meta.env.VITE_API_BASE_URL}${profile.profilePicture}`;
+    } else {
+      return user?.avatarUrl || null;
+    }
+  }, [profile?.avatarUrl, profile?.profilePicture, user?.avatarUrl]);
+
   const isVerified = profile?.isVerified || false;
   const userBio = profile?.bio || "";
 
@@ -36,15 +52,15 @@ const ProfileCard = () => {
     if (result) setIsEditing(false);
   }, [tempBio, userBio, updateProfile]);
 
-  const handleShareLink = async () => {
+  const handleShareLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(sharedLink);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      console.error("Failed to copy:", error);
     }
-  };
+  }, [sharedLink]);
 
   if (loading && !profile) {
     return (
@@ -76,13 +92,11 @@ const ProfileCard = () => {
             </span>
           )}
         </div>
-
+          
         {/* Name & Verified Badge */}
         <div className="flex items-center space-x-2">
           <h3 className="text-2xl text-gray-800 font-bold">{userName}</h3>
-          {isVerified && (
-            <FaCheckCircle className="h-5 w-5 text-blue-500" />
-          )}
+          {isVerified && <FaCheckCircle className="h-5 w-5 text-blue-500" />}
         </div>
 
         {/* Bio Section */}
@@ -109,9 +123,7 @@ const ProfileCard = () => {
               </p>
             )}
             <button
-              onClick={() =>
-                isEditing ? handleSaveBio() : setIsEditing(true)
-              }
+              onClick={() => (isEditing ? handleSaveBio() : setIsEditing(true))}
               className="ml-2 text-gray-500 hover:text-gray-700 focus:outline-none flex-shrink-0"
               aria-label={isEditing ? "Save bio" : "Edit bio"}
               disabled={isOperationPending}
@@ -141,7 +153,9 @@ const ProfileCard = () => {
           className="w-full text-center py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-200 transition duration-200 shadow-sm"
         >
           <FaShareAlt className="h-4 w-4" />
-          <span className="truncate">{copySuccess ? 'Link copied!' : sharedLink}</span>
+          <span className="truncate">
+            {copySuccess ? "Link copied!" : sharedLink}
+          </span>
         </button>
       </div>
     </div>

@@ -201,17 +201,17 @@ export const useProfileForm = (initialData = {}) => {
   const { updateProfile } = useUser();
 
   useEffect(() => {
-    setFormData({
-      bio: initialData.bio || '',
-      socialLinks: {
-        twitter: initialData.socialLinks?.twitter || '',
-        linkedin: initialData.socialLinks?.linkedin || '',
-        website: initialData.socialLinks?.website || '',
-        instagram: initialData.socialLinks?.instagram || ''
-      },
-      profileVisibility: initialData.profileVisibility || 'public'
-    });
-  }, [initialData]);
+  setFormData({
+    bio: initialData?.bio || '',
+    socialLinks: {
+      twitter: initialData?.socialLinks?.twitter || '',
+      linkedin: initialData?.socialLinks?.linkedin || '',
+      website: initialData?.socialLinks?.website || '',
+      instagram: initialData?.socialLinks?.instagram || ''
+    },
+    profileVisibility: initialData?.profileVisibility || 'public'
+  });
+}, [initialData]);
 
   const validateForm = () => {
     const newErrors = {};

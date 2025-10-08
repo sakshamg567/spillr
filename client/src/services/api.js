@@ -20,11 +20,12 @@ class APIError extends Error{
 }
 
 const getAuthHeaders = (isFormData = false) => {
-const token = localStorage.getItem('token');
+
 const headers = {};
 if (!isFormData) headers['Content-Type'] = 'application/json';
-if (token) headers['Authorization'] = `Bearer ${token}`;
-return headers};
+
+return headers;
+};
 
 export const apiRequest = async (endpoint, options = {}) => {
 const url = `${API_BASE_URL}${endpoint}`;
@@ -41,7 +42,7 @@ credentials: 'include'
    try {
     const response = await fetch(url, config);
     
-    // Handle different response types
+    
     let data;
     const contentType = response.headers.get('content-type');
     
@@ -54,7 +55,7 @@ credentials: 'include'
     if (!response.ok) {
       switch (response.status) {
         case 401:
-          localStorage.removeItem('token');
+          
           window.dispatchEvent(new CustomEvent('auth-expired'));
           throw new APIError(
             data.message || 'Authentication required',
@@ -104,7 +105,7 @@ credentials: 'include'
       throw error;
     }
     
-    // Network errors
+    
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new APIError(
         'Network error. Please check your connection.',
@@ -114,7 +115,7 @@ credentials: 'include'
       );
     }
     
-    // Unknown errors
+   
     throw new APIError(
       error.message || 'An unexpected error occurred',
       API_ERRORS.SERVER_ERROR,
@@ -124,7 +125,6 @@ credentials: 'include'
   }
 };
 
-// Request interceptor for adding loading states
 export const apiRequestWithLoading = async (endpoint, options = {}, setLoading) => {
   if (setLoading) setLoading(true);
   
@@ -136,7 +136,7 @@ export const apiRequestWithLoading = async (endpoint, options = {}, setLoading) 
   }
 };
 
-// Utility for handling form data uploads
+
 export const createFormDataRequest = (data, fileKey, file) => {
   const formData = new FormData();
   
@@ -153,10 +153,7 @@ export const createFormDataRequest = (data, fileKey, file) => {
   return {
     method: 'POST',
     body: formData,
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
-      
-    }
+    headers: {}
   };
 };
 

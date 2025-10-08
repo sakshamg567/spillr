@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext, createContext, useRef } from 'react';
+import { useState, useEffect, useCallback, useContext, createContext } from 'react';
 import Loading from '../components/Loading.jsx'
 
 const AuthContext = createContext();
@@ -110,23 +110,16 @@ const login = useCallback(async (credentials) => {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
-      });
-        localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      }); 
       setUser(null);
-      setToken(null);
       setError(null);
       setAuthMode(null);
-
-    
-
       console.log('Logout completed');
       
     } catch (error) {
       console.error('Logout error:', error);
   
       setUser(null);
-      setToken(null);
       setError(null);
       setAuthMode(null);
     } finally {
@@ -147,7 +140,6 @@ const login = useCallback(async (credentials) => {
   
   const value = {
     user,
-    token,
     loading,
     error,
     authMode,

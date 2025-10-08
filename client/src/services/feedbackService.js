@@ -3,7 +3,7 @@ import { apiRequest } from './api.js';
 export const feedbackService = {
   submit: async (feedbackData) => {
     try {
-      return await apiRequest('/feedback', {
+      return await apiRequest('/api/feedback', {
         method: 'POST',
         body: JSON.stringify(feedbackData)
       });
@@ -15,7 +15,7 @@ export const feedbackService = {
 
   getPublic: async (slug) => {
     try {
-      return await apiRequest(`/feedback/wall/${slug}`);
+      return await apiRequest(`/api/feedback/wall/${slug}`);
     } catch (error) {
       console.error('Get public feedback error:', error);
       throw error;
@@ -25,7 +25,7 @@ export const feedbackService = {
   getForOwner: async (wallId, params = {}) => {
     try {
       const queryString = new URLSearchParams(params).toString();
-      const endpoint = `/feedback/owner/${wallId}${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/api/feedback/owner/${wallId}${queryString ? `?${queryString}` : ''}`;
       return await apiRequest(endpoint);
     } catch (error) {
       console.error('Get owner feedback error:', error);
@@ -35,7 +35,7 @@ export const feedbackService = {
 
   answer: async (feedbackId, answer) => {
     try {
-      return await apiRequest(`/feedback/${feedbackId}/answer`, {
+      return await apiRequest(`/api/feedback/${feedbackId}/answer`, {
         method: 'POST',
         body: JSON.stringify({ answer })
       });
@@ -47,7 +47,7 @@ export const feedbackService = {
 
   react: async (feedbackId, emoji) => {
     try {
-      return await apiRequest(`/feedback/${feedbackId}/react`, {
+      return await apiRequest(`/api/feedback/${feedbackId}/react`, {
         method: 'POST',
         body: JSON.stringify({ emoji })
       });
@@ -59,7 +59,7 @@ export const feedbackService = {
 
   archive: async (feedbackId, archived = true) => {
     try {
-      return await apiRequest(`/feedback/${feedbackId}/archive`, {
+      return await apiRequest(`/api/feedback/${feedbackId}/archive`, {
         method: 'PATCH',
         body: JSON.stringify({ isArchived: archived })
       });
