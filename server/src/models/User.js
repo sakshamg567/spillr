@@ -37,10 +37,7 @@ const userSchema = new mongoose.Schema(
       },
       select: false,
     },
-    googleId: {
-      type: String,
-      default: null,
-    },
+   
     profilePicture: {
       type: String,
        match: [/^https?:\/\/.+\..+/, 'Invalid URL format for profile picture']

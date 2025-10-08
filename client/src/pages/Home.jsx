@@ -5,8 +5,6 @@ import { LoadingCard } from "../components/Loading"
 import Navbar from "../components/Navbar"
 import { ArrowRight, Shield, Zap, MessageCircle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import turquoise from '../assets/teals.jpeg'
-import blue from "../assets/pale.jpeg"
 import LoginForm from "../components/auth/LoginForm"
 import RegisterForm from "../components/auth/RegisterForm"
 import Footer from '../components/Footer'
@@ -23,22 +21,22 @@ const Modal = ({ children, onClose }) => {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-[9999] overflow-auto"
+        className="fixed inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-[9999] overflow-auto"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        onClick={onClose}
       >
-        <div className="w-full h-full flex items-center justify-center p-6 bg-white/80 backdrop-blur-md">
-          <motion.div
-            className="w-full max-w-lg p-6 bg-white/10 rounded-lg shadow-lg backdrop-blur-md border border-white/20"
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          >
-            {children}
-          </motion.div>
-        </div>
+        <motion.div
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-lg p-6 bg-white/10 rounded-lg shadow-lg backdrop-blur-sm border border-white/20"
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8, scale: 0.98 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          {children}
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   )
@@ -47,7 +45,8 @@ const Modal = ({ children, onClose }) => {
 const Home = () => {
   const navigate = useNavigate()
   const [hideTitle, setHideTitle] = useState(false)
-  const { loading, authMode, setAuthMode, user, logout } = useAuth()
+const { loading, authMode, setAuthMode, user, logout, isAuthenticated } = useAuth()
+
 
   useEffect(() => {
     const handleScroll = () => setHideTitle(window.scrollY > 10)
@@ -58,6 +57,13 @@ const Home = () => {
   if (loading) return <LoadingCard />
 
   const handleCloseModal = () => setAuthMode(null)
+  
+ useEffect(() => {
+  if (isAuthenticated) {
+    navigate("/dashboard", { replace: true });
+  }
+}, [isAuthenticated, navigate]);
+
 
   const handleRegisterSuccess = () => {
     setAuthMode(null)
@@ -68,6 +74,7 @@ const Home = () => {
     setAuthMode(null)
     navigate("/dashboard", { replace: true })
   }
+ 
 
   return (
     <motion.div className="min-h-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -349,11 +356,11 @@ const Home = () => {
             </div>
           </motion.div>
         </motion.div>
-        {/* How It Works Section */}
+      
 <section className="py-24 bg-center bg-cover"
 >
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    {/* Header */}
+   
     <div className="text-center mb-16">
       <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
         How It Works
@@ -363,12 +370,11 @@ const Home = () => {
       </p>
     </div>
 
-    {/* 3-Step Process */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-      {/* Step 1 */}
+      
       <div className="text-center group">
-        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6 group-hover:bg-white transition-colors">
-          <span className="text-2xl font-bold text-black">1</span>
+        <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-6 group-hover:bg-white transition-colors group-hover:text-black">
+          <span className="text-2xl font-bold text-white group-hover:text-black">1</span>
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-3">Create Your Profile</h3>
         <p className="text-gray-600">
@@ -376,10 +382,10 @@ const Home = () => {
         </p>
       </div>
 
-      {/* Step 2 */}
+   
       <div className="text-center group">
-        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6 group-hover:bg-white transition-colors">
-          <span className="text-2xl font-bold text-black">2</span>
+        <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-6 group-hover:bg-white transition-colors hover:text-black">
+          <span className="text-2xl font-bold text-white group-hover:text-black">2</span>
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-3">Share with Anyone</h3>
         <p className="text-gray-600">
@@ -389,11 +395,11 @@ const Home = () => {
         </p>
       </div>
 
-      {/* Step 3 */}
+ 
       <div className="text-center group">
-        <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-6 group-hover:bg-white transition-colors">
-          <span className="text-2xl font-bold text-black">3</span>
-        </div>
+        <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-6 group-hover:bg-white transition-colors hover:text-black">
+          <span className="text-2xl font-bold text-white group-hover:text-black">3</span>
+          </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-3">Manage & Respond</h3>
         <p className="text-gray-600">
           Log in to your dashboard to see all feedback in real time. Reply publicly, react with emojis, archive items, and track engagement.

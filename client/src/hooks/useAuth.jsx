@@ -32,11 +32,9 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setError(null);
       } else if (res.status === 401) {
-        // Unauthorized - clear user state
         setUser(null);
         setError(null);
       } else {
-        // Other error
         console.error('Failed to fetch user, status:', res.status);
         setUser(null);
       }
@@ -46,39 +44,34 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isLoggingOut]);
-
-  const login = useCallback(async (credentials) => {
-    try {
-      setError(null);
-      setLoading(true);
-
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(credentials)
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        const message = errorData.message || 'Login failed';
-        setError(message);
-        throw new Error(message);
-      }
-
-      const data = await res.json();
-      setUser(data.user);
-      setError(null);
-      return data;
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
   }, []);
+
+const login = useCallback(async (credentials) => {
+  try {
+    setError(null);
+
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(credentials)
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.user) {
+      const message = data.message || "Invalid email or password";
+      setError(message);
+      return { success: false, message };
+    }
+
+    setUser(data.user);
+    return { success: true, user: data.user };
+  } catch (error) {
+    setError(error.message);
+    return { success: false, message: error.message };
+  }
+}, []);
 
   const register = useCallback(async (userData) => {
     try {
@@ -91,73 +84,67 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include',
         body: JSON.stringify(userData)
       });
-
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        const message = errorData.message || 'Registration failed';
-        setError(message);
-        throw new Error(message);
-      }
-
-      const data = await res.json();
-      setUser(data.user);
-      setError(null);
-      return data;
-    } catch (error) {
-      console.error('Registration error:', error);
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
+      const message = data.message || "Registration failed. Please try again.";
+      setError(message);
+      throw new Error(message);
     }
-  }, []);
 
+    console.log("register response:", data);
+    setUser(data.user);
+    setError(null);
+    return data;
+  } catch (error) {
+    console.error("Registration error:", error);
+    setError(error.message || "An unexpected error occurred during registration.");
+    throw error;
+  } finally {
+    setLoading(false);
+  }
+}, []);
   const logout = useCallback(async () => {
     try {
       setIsLoggingOut(true);
       setError(null);
-      
-      // Call logout endpoint
-      const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
-
-      // Always clear local state regardless of server response
+        localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setUser(null);
       setToken(null);
       setError(null);
       setAuthMode(null);
 
-      // Clear any localStorage items that might exist
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+    
 
       console.log('Logout completed');
       
     } catch (error) {
       console.error('Logout error:', error);
-      // Still clear local state even if server request failed
+  
       setUser(null);
       setToken(null);
       setError(null);
       setAuthMode(null);
     } finally {
       setIsLoggingOut(false);
+      fetchUser();
     }
-  }, []);
+  }, [fetchUser]);
 
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Initial user fetch
+ 
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
 
   
-
   const value = {
     user,
     token,
@@ -173,7 +160,13 @@ export const AuthProvider = ({ children }) => {
     refetchUser: fetchUser
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+ return (
+  <AuthContext.Provider value={value}>
+    {loading ? <Loading /> : children}
+  </AuthContext.Provider>
+);
+
+
 };
 
 export const useAuth = () => {
@@ -232,7 +225,7 @@ export const useLoginForm = () => {
       [field]: e.target.value
     }));
     
-    // Clear field-specific errors
+
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -240,7 +233,6 @@ export const useLoginForm = () => {
       }));
     }
 
-    // Clear submit errors
     if (errors.submit) {
       setErrors(prev => ({
         ...prev,
@@ -248,7 +240,6 @@ export const useLoginForm = () => {
       }));
     }
 
-    // Clear global auth errors
     clearError();
   };
 
@@ -334,7 +325,6 @@ export const useRegisterForm = () => {
       [field]: e.target.value
     }));
     
-    // Clear field-specific errors
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -342,7 +332,7 @@ export const useRegisterForm = () => {
       }));
     }
   
-    // Clear submit errors
+
     if (errors.submit) {
       setErrors(prev => ({
         ...prev,
@@ -350,7 +340,6 @@ export const useRegisterForm = () => {
       }));
     }
 
-    // Clear global auth errors
     clearError();
   };
 

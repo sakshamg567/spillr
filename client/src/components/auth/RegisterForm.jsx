@@ -2,6 +2,7 @@ import React from "react";
 import { Mail, Lock, User, Eye, EyeOff, Chrome, AtSign } from "lucide-react";
 import { useRegisterForm } from "../../hooks/useAuth";
 import { useState } from "react";
+
 const RegisterForm = ({
   onSuccess,
   onToggleLogin,
@@ -15,13 +16,18 @@ const RegisterForm = ({
     e.preventDefault();
 
     try {
-      await handleSubmit(e); // Will throw if registration failed
-      console.log("Registration successful, calling onSuccess callback");
-      if (onSuccess) onSuccess();
+      const result = await handleSubmit(e);
+    
+      if (result?.success && onSuccess) {
+        console.log("Registration successful, calling onSuccess callback");
+        onSuccess();
+      }
     } catch (error) {
       console.error("Registration error:", error);
+      
     }
   };
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -44,7 +50,7 @@ const RegisterForm = ({
         <div className="p-6 pt-0 space-y-6">
           <form onSubmit={handleRegister} className="space-y-4">
             {errors.submit && (
-              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              <div className="text-red-700 bg-red-100 border border-red-400 px-4 py-3 rounded-md text-sm text-center font-medium" role="alert">
                 {errors.submit}
               </div>
             )}
@@ -63,7 +69,7 @@ const RegisterForm = ({
                 />
               </div>
               {errors.name && (
-                <p className="text-destructive text-sm mt-1">{errors.name}</p>
+                <p className="text-red-400 text-sm mt-1">{errors.name}</p>
               )}
             </div>
 
@@ -81,7 +87,7 @@ const RegisterForm = ({
                 />
               </div>
               {errors.username && (
-                <p className="text-destructive text-sm mt-1">
+                <p className="text-red-400 text-sm mt-1">
                   {errors.username}
                 </p>
               )}
@@ -99,10 +105,9 @@ const RegisterForm = ({
                   className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   required
                 />
-                
               </div>
               {errors.email && (
-                <p className="text-destructive text-sm mt-1">{errors.email}</p>
+                <p className="text-red-400 text-sm mt-1">{errors.email}</p>
               )}
             </div>
 
@@ -131,7 +136,7 @@ const RegisterForm = ({
                 </button>
               </div>
               {errors.password && (
-                <p className="text-destructive text-sm mt-1">
+                <p className="text-red-400 text-sm mt-1">
                   {errors.password}
                 </p>
               )}
@@ -162,7 +167,7 @@ const RegisterForm = ({
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="text-destructive text-sm mt-1">
+                <p className="text-red-400 text-sm mt-1">
                   {errors.confirmPassword}
                 </p>
               )}
@@ -171,7 +176,7 @@ const RegisterForm = ({
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full h-12 bg-black hover:bg-gray-800 text-white font-medium rounded-md"
+              className="w-full h-12 bg-black hover:bg-gray-800 disabled:bg-gray-600 text-white font-medium rounded-md transition-colors cursor-pointer"
               disabled={loading}
             >
               {loading ? "Creating Account..." : "Create Account"}
@@ -180,7 +185,7 @@ const RegisterForm = ({
 
           {/* Toggle to Login */}
           {onToggleLogin && (
-            <p className="text-center text-sm text-muted-foreground mt-4 ">
+            <p className="text-center text-sm text-muted-foreground mt-4">
               Already have an account?{" "}
               <button
                 type="button"

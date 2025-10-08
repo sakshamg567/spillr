@@ -19,25 +19,25 @@ class APIError extends Error{
     }
 }
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` })
-  };
-};
+const getAuthHeaders = (isFormData = false) => {
+const token = localStorage.getItem('token');
+const headers = {};
+if (!isFormData) headers['Content-Type'] = 'application/json';
+if (token) headers['Authorization'] = `Bearer ${token}`;
+return headers};
 
 export const apiRequest = async (endpoint, options = {}) => {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const config = {
-  ...options,
-  headers: {
-    ...getAuthHeaders(),
-    ...(options.headers || {})
-  }
-};
+const url = `${API_BASE_URL}${endpoint}`;
+const isFormData = options.body instanceof FormData;
 
+  const config = {
+...options,
+headers: {
+...getAuthHeaders(isFormData),
+...(options.headers || {})
+},
+credentials: 'include'
+};
    try {
     const response = await fetch(url, config);
     
@@ -159,3 +159,5 @@ export const createFormDataRequest = (data, fileKey, file) => {
     }
   };
 };
+
+

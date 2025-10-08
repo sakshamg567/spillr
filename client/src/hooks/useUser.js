@@ -23,7 +23,7 @@ export const useUser = (autoFetch = true) => {
       setLoading(false);
       setIsOperationPending(false);
     }
-  }, [isOperationPending]);
+  }, []);
 
   const updateProfile = useCallback(async (profileData) => {
     if (isOperationPending) return;
@@ -40,7 +40,7 @@ export const useUser = (autoFetch = true) => {
       setLoading(false);
       setIsOperationPending(false);
     }
-  }, [isOperationPending]);
+  }, []);
 
   const uploadProfilePicture = useCallback(async (file) => {
     if (isOperationPending) return;
@@ -57,7 +57,7 @@ export const useUser = (autoFetch = true) => {
       setLoading(false);
       setIsOperationPending(false);
     }
-  }, [isOperationPending]);
+  }, []);
 
   const updateNotifications = useCallback(async (settings) => {
     if (isOperationPending) return;
@@ -74,7 +74,7 @@ export const useUser = (autoFetch = true) => {
       setLoading(false);
       setIsOperationPending(false);
     }
-  }, [isOperationPending]);
+  }, []);
 
   useEffect(() => {
     if (autoFetch) {

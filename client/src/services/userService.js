@@ -3,7 +3,7 @@ import { apiRequest, createFormDataRequest } from './api.js';
 export const userService = {
   getProfile: async () => {
     try {
-      return await apiRequest('/settings/me');
+      return await apiRequest('/api/settings/me');
     } catch (error) {
       console.error('Get profile error:', error);
       throw error;
@@ -12,7 +12,7 @@ export const userService = {
 
   updateProfile: async (profileData) => {
     try {
-      return await apiRequest('/settings/profile', {
+      return await apiRequest('/api/settings/profile', {
         method: 'PATCH',
         body: JSON.stringify(profileData)
       });
@@ -26,7 +26,7 @@ export const userService = {
     try {
       const formDataRequest = createFormDataRequest({}, 'profilePic', file);
       
-      return await apiRequest('/settings/profile-picture', {
+      return await apiRequest('/api/settings/profile-picture', {
         ...formDataRequest,
         method: 'PATCH'
       });
@@ -38,7 +38,7 @@ export const userService = {
 
   updateNotifications: async (notificationSettings) => {
     try {
-      return await apiRequest('/settings/notifications', {
+      return await apiRequest('/api/settings/notifications', {
         method: 'PATCH',
         body: JSON.stringify(notificationSettings)
       });
@@ -50,7 +50,7 @@ export const userService = {
 
   changePassword: async (passwordData) => {
     try {
-      return await apiRequest('/settings/change-password', {
+      return await apiRequest('/api/settings/change-password', {
         method: 'POST',
         body: JSON.stringify(passwordData)
       });
@@ -62,7 +62,7 @@ export const userService = {
 
   blockUser: async (userIdToBlock) => {
     try {
-      return await apiRequest('/settings/block', {
+      return await apiRequest('/api/settings/block', {
         method: 'POST',
         body: JSON.stringify({ userIdToBlock })
       });
@@ -74,7 +74,7 @@ export const userService = {
 
   blockIP: async (ipToBlock) => {
     try {
-      return await apiRequest('/settings/block', {
+      return await apiRequest('/api/settings/block', {
         method: 'POST',
         body: JSON.stringify({ ipToBlock })
       });
@@ -86,7 +86,7 @@ export const userService = {
 
   unblockUser: async (userIdToUnblock) => {
     try {
-      return await apiRequest('/settings/unblock', {
+      return await apiRequest('/api/settings/unblock', {
         method: 'DELETE',
         body: JSON.stringify({ userIdToUnblock })
       });
@@ -98,7 +98,7 @@ export const userService = {
 
   unblockIP: async (ipToUnblock) => {
     try {
-      return await apiRequest('/settings/unblock', {
+      return await apiRequest('/api/settings/unblock', {
         method: 'DELETE',
         body: JSON.stringify({ ipToUnblock })
       });
@@ -110,7 +110,7 @@ export const userService = {
 
   requestAccountDeletion: async (currentPassword) => {
     try {
-      return await apiRequest('/settings/request-account-deletion', {
+      return await apiRequest('/api/settings/request-account-deletion', {
         method: 'POST',
         body: JSON.stringify({ currentPassword })
       });
@@ -122,7 +122,7 @@ export const userService = {
 
   confirmAccountDeletion: async (token, userId) => {
     try {
-      return await apiRequest('/settings/confirm-account-deletion', {
+      return await apiRequest('/api/settings/confirm-account-deletion', {
         method: 'POST',
         body: JSON.stringify({ token, userId })
       });
