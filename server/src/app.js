@@ -4,7 +4,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import wallRoutes from "./routes/wall.js";
+import privateWallRoutes from "./routes/wall.js";
 import feedbackRoutes from "./routes/feedback.js";
 import authRoutes from "./routes/auth.js";
 import userSettings from "./routes/userSettings.js";
@@ -12,7 +12,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import cookieParser from 'cookie-parser';
-
+import publicWallRoute from './routes/wallRoutes.js'
 const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -95,7 +95,8 @@ app.use("/uploads", express.static(uploadsPath, {
 
 
 app.use("/api/auth", authRoutes);
-app.use("/api/wall", wallRoutes);
+app.use("/api/wall", privateWallRoutes);
+app.use("/api/public/wall", publicWallRoute);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/settings", userSettings);
 
