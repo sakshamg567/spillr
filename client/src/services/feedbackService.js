@@ -22,16 +22,21 @@ export const feedbackService = {
     }
   },
 
-  getForOwner: async (wallId, params = {}) => {
-    try {
-      const queryString = new URLSearchParams(params).toString();
-      const endpoint = `/api/feedback/owner/${wallId}${queryString ? `?${queryString}` : ''}`;
-      return await apiRequest(endpoint);
-    } catch (error) {
-      console.error('Get owner feedback error:', error);
-      throw error;
-    }
-  },
+  getForOwner: async (slug, params = {}) => {
+  try {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/api/feedback/owner/${slug}${queryString ? `?${queryString}` : ''}`;
+    return await apiRequest(endpoint, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`, 
+      },
+    });
+  } catch (error) {
+    console.error('Get owner feedback error:', error);
+    throw error;
+  }
+},
+
 
   answer: async (feedbackId, answer) => {
     try {

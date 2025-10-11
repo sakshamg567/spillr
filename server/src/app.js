@@ -12,7 +12,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import cookieParser from 'cookie-parser';
-import publicWallRoute from './routes/wallRoutes.js'
+import WallRoute from './routes/wallRoutes.js'
 const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -96,7 +96,7 @@ app.use("/uploads", express.static(uploadsPath, {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/wall", privateWallRoutes);
-app.use("/api/public/wall", publicWallRoute);
+app.use("/api/public/wall",WallRoute);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/settings", userSettings);
 

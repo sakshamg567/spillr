@@ -8,13 +8,15 @@ const ProfileCard = () => {
   const { user } = useAuth();
 
   const userName = profile?.name || user?.name || "User";
-  const sharedLink =
-    profile?.profileUrl ||
-    profile?.dashboardLink ||
-    user?.profileLink ||
-    (user?.username
-      ? `${window.location.origin}/${user.username}`
-      : window.location.origin);
+   
+  const sharedLink = useMemo(() => {
+    const username = profile?.username || user?.username;
+    if (username) {
+      return `${window.location.origin}/public/wall/${username}`;
+    }
+    return window.location.origin;
+  }, [profile?.username, user?.username]);
+
 
   // Memoize avatar URL calculation to prevent unnecessary recalculations
   const avatarUrl = useMemo(() => {

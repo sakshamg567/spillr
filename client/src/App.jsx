@@ -17,7 +17,7 @@ export default function App() {
        
         <Route path="/" element={<Home />} />
         
-          <Route path="/public/wall/:username" element={<PublicWallView />} />
+          <Route path="/public/wall/:slug" element={<PublicWallView />} />
     
         <Route element={<AuthRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />

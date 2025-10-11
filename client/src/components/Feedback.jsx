@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { useOwnerFeedback, useFeedbackAnswer } from '../hooks/useFeedback';
+import { useBlockManagement } from "../hooks/useUser";
+import toast from "react-hot-toast";
 import { 
   MessageCircle, 
   Reply, 
   Archive, 
-  Search, 
-  Filter, 
-  MoreVertical,
-  ExternalLink,
   CheckCircle,
   Clock,
+  Ban,
   ArchiveIcon
 } from 'lucide-react';
 
 const FeedbackManagement = () => {
-  const { wallId } = useParams();
+  const { user } = useAuth();
+  const slug = user?.slug || user?.username;
   const {
     feedbacks,
     pagination,
@@ -27,7 +28,7 @@ const FeedbackManagement = () => {
     changePage,
     answerFeedback,
     archiveFeedback
-  } = useOwnerFeedback(wallId);
+  } = useOwnerFeedback(slug);
 
   const {
     formData: answerFormData,
@@ -40,7 +41,43 @@ const FeedbackManagement = () => {
 
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [showAnswerForm, setShowAnswerForm] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const { blockUser, blockIP, loading: blockLoading } = useBlockManagement();
+
+
+  const handleBlock = async (feedback) => {
+  if (!window.confirm("Are you sure you want to block this user or IP?")) return;
+
+  try {
+    let success = false;
+
+    // Try user block first
+    const userIdToBlock =
+      typeof feedback.userId === "object"
+        ? feedback.userId._id
+        : feedback.userId;
+
+    if (userIdToBlock) {
+      await blockUser(userIdToBlock);
+      success = true;
+    }
+
+    // If no user, fallback to IP
+    if (!success && feedback.ipAddress) {
+      await blockIP(feedback.ipAddress);
+      success = true;
+    }
+
+    if (success) {
+     toast.success("User/IP blocked successfully 🚫");
+    } else {
+      toast.error("No user ID or IP found to block");
+    }
+  } catch (err) {
+    console.error("Error blocking:", err);
+   toast.error("Failed to block user");
+  }
+};
+
 
   const handleAnswerSubmit = async (feedbackId) => {
     try {
@@ -130,90 +167,22 @@ const FeedbackManagement = () => {
               <h1 className="text-3xl font-bold text-gray-900">Feedback Management</h1>
               <p className="text-gray-600 mt-1">Manage and respond to feedback on your wall</p>
             </div>
-            <a
-              href={`/wall/${wallId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              View Public Wall
-            </a>
+            
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              </div>
-              <MessageCircle className="w-8 h-8 text-blue-500" />
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.active}</p>
-              </div>
-              <Clock className="w-8 h-8 text-yellow-500" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Answered</p>
-                <p className="text-2xl font-bold text-green-600">{stats.answered}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Response Rate</p>
-                <p className="text-2xl font-bold text-purple-600">{stats.answerRate}%</p>
-              </div>
-              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <span className="text-purple-600 text-sm font-bold">%</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      
 
         {/* Filters & Search */}
         <div className="bg-white rounded-lg shadow-sm border mb-6">
           <div className="p-6 border-b">
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
               {/* Search */}
-              <form onSubmit={handleSearch} className="flex gap-2 flex-1 max-w-md">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search feedback..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Search
-                </button>
-              </form>
-
-              {/* Filter Tabs */}
+            
+          {/* Filter Tabs */}
               <div className="flex items-center bg-gray-100 p-1 rounded-lg">
                 {[
                   { key: 'active', label: 'Active', count: stats.active },
@@ -325,10 +294,14 @@ const FeedbackManagement = () => {
                               >
                                 {answerLoading ? 'Posting...' : 'Post Response'}
                               </button>
+                        
+
+
                             </div>
                           </div>
                         </div>
                       )}
+
 
                       {/* Reactions */}
                       {feedback.reactions && Object.keys(feedback.reactions).length > 0 && (
@@ -362,6 +335,14 @@ const FeedbackManagement = () => {
                       >
                         <Archive className="w-5 h-5" />
                       </button>
+                            <button
+  onClick={() => handleBlock(feedback)}
+  disabled={blockLoading}
+  className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+  title="Block user or IP"
+>
+  <Ban className="w-5 h-5" />
+</button>
                     </div>
                   </div>
                 </div>

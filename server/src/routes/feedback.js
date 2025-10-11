@@ -81,16 +81,12 @@ router.post("/",feedbackLimiter, async (req, res) => {
 });
 
 // Get feedback for owner 
-router.get('/owner/:wallId', authMiddleware, async (req, res) => {
+router.get('/owner/:slug', authMiddleware, async (req, res) => 
+{
   try {
-    const { wallId } = req.params;
+    const slug = req.params.slug.trim().toLowerCase();
 
- 
-    if (!validateObjectId(wallId)) {
-      return res.status(400).json({ message: "Invalid wall ID format" });
-    }
-
-    const wall = await Wall.findById(wallId);
+    const wall = await Wall.findOne({ slug });
     if (!wall) {
       return res.status(404).json({ message: "Wall not found" });
     }
@@ -104,7 +100,9 @@ router.get('/owner/:wallId', authMiddleware, async (req, res) => {
     const limitNumber = Math.min(100, Math.max(1, parseInt(limit, 10))) || 10;
     const skip = (pageNumber - 1) * limitNumber;
 
-    let filter = { wallId: new mongoose.Types.ObjectId(wallId) };
+   let filter = { wallId: wall._id };
+
+
     let sortOption = { createdAt: -1 };
 
     switch (sort) {
@@ -134,16 +132,30 @@ router.get('/owner/:wallId', authMiddleware, async (req, res) => {
       Feedback.countDocuments(filter)
     ]);
  
-    res.json({
-      feedbacks,
-      pagination: {
-        currentPage: pageNumber,
-        totalPages: Math.ceil(totalFeedbacks / limitNumber),
-        totalFeedbacks,
-        hasNextPage: pageNumber < Math.ceil(totalFeedbacks / limitNumber),
-        hasPrevPage: pageNumber > 1,
-      }
-    });
+    const answeredCount = await Feedback.countDocuments({ wallId: wall._id, isAnswered: true });
+const archivedCount = await Feedback.countDocuments({ wallId: wall._id, isArchived: true });
+const totalCount = await Feedback.countDocuments({ wallId: wall._id });
+const activeCount = totalCount - archivedCount;
+const answerRate = totalCount ? Math.round((answeredCount / totalCount) * 100) : 0;
+
+res.json({
+  feedbacks,
+  pagination: {
+    currentPage: pageNumber,
+    totalPages: Math.ceil(totalFeedbacks / limitNumber),
+    totalFeedbacks,
+    hasNextPage: pageNumber < Math.ceil(totalFeedbacks / limitNumber),
+    hasPrevPage: pageNumber > 1,
+  },
+  stats: {
+    total: totalCount,
+    answered: answeredCount,
+    archived: archivedCount,
+    active: activeCount,
+    answerRate
+  }
+});
+
 
   } catch (err) {
     res.status(500).json({ message: "Unable to fetch feedback" }); 
@@ -254,9 +266,29 @@ router.get("/wall/:slug", async (req, res) => {
     .sort({ updatedAt: -1 })
     .limit(100); // Prevent large responses
 
-    res.json(feedbacks);
+    res.json({feedbacks});
   } catch (err) {
     res.status(500).json({ message: "Unable to fetch feedback" });
+  }
+});
+
+router.patch('/:id/archive', authMiddleware, async (req, res) => {
+  try {
+    const { archived = true } = req.body;
+
+    const feedback = await Feedback.findById(req.params.id).populate('wallId');
+    if (!feedback) return res.status(404).json({ message: 'Feedback not found' });
+
+    if (feedback.wallId.ownerId.toString() !== req.user.id)
+      return res.status(403).json({ message: 'Not authorized' });
+
+    feedback.isArchived = archived;
+    await feedback.save();
+
+    res.json({ message: archived ? 'Feedback archived' : 'Feedback unarchived' });
+  } catch (err) {
+    console.error('Archive feedback error:', err);
+    res.status(500).json({ message: 'Unable to update archive status' });
   }
 });
 

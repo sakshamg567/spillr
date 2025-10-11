@@ -6,27 +6,28 @@ import User from "../models/User.js";
 import rateLimit from "express-rate-limit";
 import authMiddleware from "../middleware/authMiddleware.js";
 import sendEmail from "../utils/sendEmail.js";
+import Wall from "../models/Wall.js";
 const router = express.Router();
 
 const getJWTSecret = () => {
   const JWT_SECRET = process.env.JWT_SECRET;
-  
+
   if (!JWT_SECRET || JWT_SECRET.length < 20) {
     console.error("JWT_SECRET must be at least 20 characters long");
     console.error("Current JWT_SECRET length:", JWT_SECRET?.length || 0);
     throw new Error("Invalid JWT_SECRET configuration");
   }
-  
+
   return JWT_SECRET;
 };
 
 const setTokenCookie = (res, token) => {
   res.cookie("token", token, {
-    httpOnly: true,           
-    secure: process.env.NODE_ENV === "production", 
-    sameSite: "lax",          
-    maxAge: 7 * 24 * 60 * 60 * 1000, 
-    path: "/"               
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
   });
 };
 
@@ -34,7 +35,7 @@ const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { message: "Too many authentication attempts, try again later" },
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
 });
 
 const validateEmail = (email) => {
@@ -43,41 +44,47 @@ const validateEmail = (email) => {
 };
 
 const validateUsername = (username) => {
-  return username &&
-         typeof username === 'string' &&
-         username.trim().length >= 3 &&
-         username.trim().length <= 30 &&
-         /^[a-zA-Z0-9_]+$/.test(username);
+  return (
+    username &&
+    typeof username === "string" &&
+    username.trim().length >= 3 &&
+    username.trim().length <= 30 &&
+    /^[a-zA-Z0-9_]+$/.test(username)
+  );
 };
 
 const validatePassword = (password) => {
-  return password && 
-         typeof password === 'string' &&
-         password.length >= 8 && 
-         password.length <= 128 &&
-         /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password);
+  return (
+    password &&
+    typeof password === "string" &&
+    password.length >= 8 &&
+    password.length <= 128 &&
+    /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
+  );
 };
 
 const validateName = (name) => {
-  return name && 
-         typeof name === 'string' && 
-         name.trim().length >= 2 && 
-         name.trim().length <= 50;
+  return (
+    name &&
+    typeof name === "string" &&
+    name.trim().length >= 2 &&
+    name.trim().length <= 50
+  );
 };
 
 // Health check route
 router.get("/health", (req, res) => {
   try {
     const JWT_SECRET = getJWTSecret();
-    res.json({ 
-      status: "ok", 
+    res.json({
+      status: "ok",
       jwt_configured: !!JWT_SECRET,
-      message: "Auth service is running"
+      message: "Auth service is running",
     });
   } catch (error) {
-    res.status(500).json({ 
-      status: "error", 
-      message: error.message 
+    res.status(500).json({
+      status: "error",
+      message: error.message,
     });
   }
 });
@@ -92,7 +99,7 @@ router.get("/me", authMiddleware, async (req, res) => {
       id: req.user._id,
       name: req.user.name,
       email: req.user.email,
-      username: req.user.username
+      username: req.user.username,
     });
   } catch (err) {
     console.error("Me route error:", err);
@@ -100,7 +107,6 @@ router.get("/me", authMiddleware, async (req, res) => {
   }
 });
 
-// Register new user
 router.post("/register", authLimiter, async (req, res) => {
   try {
     const { name: rawName, email: rawEmail, password, username: rawUsername } = req.body;
@@ -108,103 +114,101 @@ router.post("/register", authLimiter, async (req, res) => {
     const email = rawEmail?.trim();
     const username = rawUsername?.trim();
 
-    // Validation
     if (!validateName(name)) {
-      return res.status(400).json({ 
-        message: "Name must be 2-50 characters long" 
-      });
+      return res.status(400).json({ message: "Name must be 2-50 characters long" });
     }
-
     if (!validateEmail(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
-
-    if (!validateUsername(username)) { 
-      return res.status(400).json({ 
-        message: "Username must be 3-30 characters and contain only letters, numbers, and underscores" 
-      });
+    if (!validateUsername(username)) {
+      return res.status(400).json({ message: "Username must be 3-30 characters..." });
     }
-
     if (!validatePassword(password)) {
-      return res.status(400).json({ 
-        message: "Password must be 8-128 characters with uppercase, lowercase, and number" 
-      });
+      return res.status(400).json({ message: "Password must be 8-128 characters..." });
     }
 
     const normalizedEmail = email.toLowerCase();
-    
-    // Check if user already exists
+    const normalizedUsername = username.toLowerCase();
+
     const existingUser = await User.findOne({
-      $or: [
-        { email: normalizedEmail },
-        { username: username }
-      ]
+      $or: [{ email: normalizedEmail }, { username:  normalizedUsername }]
     });
-    
     if (existingUser) {
-      if (existingUser.email === normalizedEmail) {
+     if (existingUser.email === normalizedEmail) {
         return res.status(400).json({ message: "Email already in use" });
       } else {
         return res.status(400).json({ message: "Username already in use" });
       }
     }
 
-    // Create new user
     const passwordHash = await User.hashPassword(password);
     const newUser = await User.create({
       name,
       email: normalizedEmail,
-      username,
+      username: normalizedUsername,
       passwordHash,
     });
 
-    // Create JWT token
+    try {
+      await Wall.create({
+        ownerId: newUser._id,
+        username: normalizedUsername,
+        slug: normalizedUsername 
+      });
+      console.log(`✓ Wall auto-created for user: ${normalizedUsername}`);
+    } catch (wallError) {
+      console.error("Failed to create wall for new user:", wallError);
+    }
+
     const JWT_SECRET = getJWTSecret();
     const token = jwt.sign(
-      { id: newUser._id, email: normalizedEmail }, 
-      JWT_SECRET, 
+      { id: newUser._id, email: normalizedEmail },
+      JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     setTokenCookie(res, token);
-
     console.log("Registration successful for:", normalizedEmail);
 
     res.status(201).json({
       message: "Registration successful",
-      user: { 
-        id: newUser._id, 
-        name, 
+      user: {
+        id: newUser._id,
+        name,
         email: normalizedEmail,
-        username 
+        username: normalizedUsername,
       },
     });
+
   } catch (err) {
     console.error("Registration error:", err);
     res.status(500).json({ message: "Registration failed" });
   }
 });
 
-// Login user
 router.post("/login", authLimiter, async (req, res) => {
   try {
     const { email: rawEmail, password } = req.body;
     const email = rawEmail?.trim();
 
     if (!validateEmail(email) || !password) {
-      return res.status(400).json({ message: "Valid email and password required" });
+      return res
+        .status(400)
+        .json({ message: "Valid email and password required" });
     }
 
     const normalizedEmail = email.toLowerCase();
-    const user = await User.findOne({ email: normalizedEmail }).select('+passwordHash');
-    
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      "+passwordHash"
+    );
+
     if (!user || !user.isActive) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     if (!user.passwordHash) {
-      return res.status(400).json({ 
-        message: "Please reset your password" 
+      return res.status(400).json({
+        message: "Please reset your password",
       });
     }
 
@@ -213,29 +217,27 @@ router.post("/login", authLimiter, async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
-    // Create JWT token
     const JWT_SECRET = getJWTSecret();
     const token = jwt.sign(
-      { id: user._id, email: normalizedEmail }, 
-      JWT_SECRET, 
+      { id: user._id, email: normalizedEmail },
+      JWT_SECRET,
       { expiresIn: "7d" }
     );
-   
+
     setTokenCookie(res, token);
 
     console.log("Login successful for:", normalizedEmail);
 
     res.status(200).json({
       message: "Login successful",
-      user: { 
-        id: user._id, 
-        name: user.name, 
+      user: {
+        id: user._id,
+        name: user.name,
         email: normalizedEmail,
-        username: user.username 
+        username: user.username,
       },
     });
   } catch (err) {
@@ -272,7 +274,7 @@ router.post("/forgot-password", async (req, res) => {
     await sendEmail({
       to: user.email,
       subject: "Password Reset Request",
-      html: message
+      html: message,
     });
 
     res.status(200).json({ message: "Reset link sent to your email" });
@@ -292,7 +294,7 @@ router.post("/reset-password", async (req, res) => {
   try {
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
+      resetPasswordExpires: { $gt: Date.now() },
     });
 
     if (!user) {
@@ -305,13 +307,13 @@ router.post("/reset-password", async (req, res) => {
     await user.save();
 
     const authToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-     res.json({ 
-      message: 'Password reset successful',
+    res.json({
+      message: "Password reset successful",
       token: authToken,
-      user: { id: user._id, email: user.email, name: user.name }
+      user: { id: user._id, email: user.email, name: user.name },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -322,7 +324,7 @@ router.get("/verify-reset-token/:token", async (req, res) => {
 
     const user = await User.findOne({
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }, 
+      resetPasswordExpires: { $gt: Date.now() },
     });
 
     if (!user) {
@@ -342,9 +344,9 @@ router.post("/logout", (req, res) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/"
+    path: "/",
   });
-  
+
   console.log("User logged out");
   res.status(200).json({ message: "Logged out successfully" });
 });

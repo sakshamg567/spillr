@@ -1,11 +1,9 @@
 import express from "express";
-import Wall from "../models/Wall.js";
-import User from "../models/User.js";
-import Feedback from "../models/Feedback.js";
-import { getPublicWall } from '../controllers/wallController.js';
+import { getPublicWall, getPublicFeedback } from "../controllers/wallController.js";
+
 const router = express.Router();
 
-router.get('/:username', getPublicWall);
-
+router.get("/:slug", getPublicWall);
+router.get("/:slug/feedbacks", getPublicFeedback);
 
 export default router;

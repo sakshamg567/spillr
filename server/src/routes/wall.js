@@ -2,7 +2,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import Wall from "../models/Wall.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-
+import User from "../models/User.js";
 
 const router = express.Router();
 
@@ -58,8 +58,15 @@ router.post("/", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Slug already taken" });
     }
 
+    // Get user's username for the wall
+    const user = await User.findById(req.user.id).select('username');
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     const wall = new Wall({
       ownerId: req.user.id,
+      username: user.username,
       slug: trimmedSlug
     });
 

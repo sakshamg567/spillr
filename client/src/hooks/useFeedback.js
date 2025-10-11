@@ -123,7 +123,7 @@ export const usePublicFeedback = (wallSlug) => {
   };
 };
 
-export const useOwnerFeedback = (wallId) => {
+export const useOwnerFeedback = (slug) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -142,22 +142,22 @@ export const useOwnerFeedback = (wallId) => {
   const [error, setError] = useState(null);
 
   const fetchFeedback = useCallback(async () => {
-    if (!wallId) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const data = await feedbackService.getForOwner(wallId, filters);
-      setFeedbacks(data.feedbacks || []);
-      setPagination(data.pagination || {});
-      
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [wallId, filters]);
+  if (!slug) return;
+
+  try {
+    setLoading(true);
+    setError(null);
+
+    const data = await feedbackService.getForOwner(slug, filters);
+    setFeedbacks(data.feedbacks || []);
+    setPagination(data.pagination || {});
+  } catch (error) {
+    setError(error.message);
+  } finally {
+    setLoading(false);
+  }
+}, [slug, filters]);
+
 
   useEffect(() => {
     fetchFeedback();

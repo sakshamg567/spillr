@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import LoginForm from "../components/auth/LoginForm"
 import RegisterForm from "../components/auth/RegisterForm"
 import Footer from '../components/Footer'
+import { useLocation } from "react-router-dom";
 
 const Modal = ({ children, onClose }) => {
   useEffect(() => {
@@ -43,6 +44,7 @@ const Modal = ({ children, onClose }) => {
 }
 
 const Home = () => {
+  const location = useLocation();
   const navigate = useNavigate()
   const [hideTitle, setHideTitle] = useState(false)
 const { loading, authMode, setAuthMode, user, logout, isAuthenticated } = useAuth()
@@ -54,16 +56,15 @@ const { loading, authMode, setAuthMode, user, logout, isAuthenticated } = useAut
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  if (loading) return <LoadingCard />
+ useEffect(() => {
+    if (isAuthenticated && location.pathname === '/') {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate, location.pathname]);
+
+if (loading) return <LoadingCard />
 
   const handleCloseModal = () => setAuthMode(null)
-  
- useEffect(() => {
-  if (isAuthenticated) {
-    navigate("/dashboard", { replace: true });
-  }
-}, [isAuthenticated, navigate]);
-
 
   const handleRegisterSuccess = () => {
     setAuthMode(null)
