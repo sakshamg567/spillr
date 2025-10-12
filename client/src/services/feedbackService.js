@@ -140,6 +140,20 @@ export const feedbackService = {
       topReactions
     };
   },
+  getStatsForOwner: async (slug) => {
+  try {
+    const res = await apiRequest(`/api/feedback/owner/${slug}?sort=active&page=1`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      },
+    });
+    return res.stats || {};
+  } catch (error) {
+    console.error('Get feedback stats error:', error);
+    throw error;
+  }
+},
+
 
   filterFeedbacks: (feedbacks, filters) => {
     let filtered = [...feedbacks];
@@ -174,4 +188,5 @@ export const feedbackService = {
 
     return filtered;
   }
+  
 };

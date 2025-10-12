@@ -33,7 +33,7 @@ const setTokenCookie = (res, token) => {
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 10,
   message: { message: "Too many authentication attempts, try again later" },
   skipSuccessfulRequests: true,
 });

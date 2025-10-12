@@ -94,7 +94,7 @@ const Footer = () => {
   return (
 
  <footer  >
-      <div className=" mx-auto px-6 py-8 text-gray-100 bg-gray-500">
+      <div className=" mx-auto px-6 py-8 text-gray-100 bg-gray-700">
         {/* Footer Top */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-6 md:gap-0">
           <div className="flex flex-col space-y-2">

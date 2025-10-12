@@ -1,8 +1,9 @@
 "use client"
-
+import toast from 'react-hot-toast';
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { Send, MessageCircle, Eye } from "lucide-react"
+import Footer from './Footer';
 
 const PublicWallView = () => {
   const { slug } = useParams()
@@ -14,7 +15,7 @@ const PublicWallView = () => {
   const [answeredFeedbacks, setAnsweredFeedbacks] = useState([])
   const [loadingProfile, setLoadingProfile] = useState(true)
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000"
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -76,28 +77,31 @@ const PublicWallView = () => {
     setError("")
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/feedback`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: formData.question,
-          wallSlug: userProfile.slug,
-        }),
-      })
+  const response = await fetch(`${API_BASE_URL}/api/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      question: formData.question,
+      wallSlug: userProfile.slug,
+    }),
+  });
 
-      if (response.ok) {
-        setSuccess(true)
-        setFormData({ question: "" })
-        setTimeout(() => setSuccess(false), 3000)
-      } else {
-        const data = await response.json()
-        setError(data.message || "Failed to send message")
-      }
-    } catch (err) {
-      setError("Failed to send message. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+  if (response.ok) {
+    toast.success("Message sent!");
+    setSuccess(true);
+    setFormData({ question: "" });
+    setTimeout(() => setSuccess(false), 3000);
+  } else {
+    const data = await response.json();
+    toast.error(data.message || "Failed to send message");
+    setError(data.message || "Failed to send message");
+  }
+} catch (err) {
+  toast.error("Failed to send message. Try again.");
+  setError("Failed to send message. Please try again.");
+} finally {
+  setLoading(false);
+}
   }
 
   if (loadingProfile) {
@@ -132,38 +136,40 @@ const PublicWallView = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="bg-background border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="font-bold text-2xl tracking-wider">
-                
-                <span className="sr-only">Home</span>
-              </div>
-            </Link>
-            <nav className="hidden md:flex items-center gap-6 text-sm">
-              <Link to="/" className="hover:underline underline-offset-4">
-                Home
-              </Link>
-              <Link to="/about" className="hover:underline underline-offset-4">
-                About Us
-              </Link>
-              <Link to="/contact" className="hover:underline underline-offset-4">
-                Contact Us
-              </Link>
-              <Link to="/register" className="hover:underline underline-offset-4">
-                Register
-              </Link>
-              <Link to="/login" className="hover:underline underline-offset-4">
-                Login
-              </Link>
-            </nav>
-          </div>
+<header className="fixed top-0 w-full z-50 backdrop-blur-lg bg-white/10 border-b border-white/10 shadow-md">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* Logo */}
+        <div className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide  transition-opacity duration-500">
+          Spillr
         </div>
-      </header>
+    
+
+      {/* Nav Links */}
+      <nav className="flex flex-wrap items-center gap-3 text-sm text-gray-800">
+        <Link to="/" className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg ">
+          Home
+        </Link>
+        <Link to="/about" className="hidden sm:inline hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg">
+          About Us
+        </Link>
+        <Link to="/contact" className="hidden sm:inline hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg">
+          Contact Us
+        </Link>
+        <Link to="/register" className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg ">
+          Register
+        </Link>
+        <Link to="/login" className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg ">
+          Login
+        </Link>
+      </nav>
+    </div>
+  </div>
+</header>
+
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12">
+      <div className="max-w-4xl mx-auto px-4 py-26">
         {/* User Profile Card */}
         <div className="bg-background rounded-2xl border border-border p-8 mb-8">
           <div className="flex flex-col items-center">
@@ -183,12 +189,11 @@ const PublicWallView = () => {
               )}
             </div>
 
-            <h1 className="text-3xl font-bold mb-2">{userProfile?.name || undefined}</h1>
+            <h1 className="text-3xl font-bold mb-1">{userProfile?.name || undefined}</h1>
 
-            {userProfile?.bio && <p className="text-muted-foreground text-center max-w-md mb-4">{userProfile.bio}</p>}
+            {userProfile?.bio && <p className="text-muted-foreground text-center max-w-md mb-2">{userProfile.bio}</p>}
 
             <div className="flex items-center gap-2 text-muted-foreground mb-4">
-              <Eye className="w-4 h-4" aria-hidden="true" />
               <span className="text-sm">@{slug}</span>
             </div>
           </div>
@@ -201,7 +206,7 @@ const PublicWallView = () => {
           {success && (
             <div className="bg-muted border border-border rounded-lg p-4 mb-6">
               <p className="font-medium">
-                <span className="font-semibold">Success:</span> Message sent.
+                <span className="font-semibold"></span> Message sent.
               </p>
             </div>
           )}
@@ -209,7 +214,7 @@ const PublicWallView = () => {
           {error && (
             <div className="bg-muted border border-border rounded-lg p-4 mb-6">
               <p>
-                <span className="font-semibold">Error:</span> {error}
+                <span className="font-semibold"></span> {error}
               </p>
             </div>
           )}
@@ -239,7 +244,7 @@ const PublicWallView = () => {
           </form>
 
           <div className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
-            <span aria-hidden="true">ℹ️</span>
+            <span aria-hidden="true">-</span>
             <p>Messages will not show here until answered.</p>
           </div>
         </div>
@@ -257,7 +262,7 @@ const PublicWallView = () => {
                   {feedback.answer && (
                     <div className="bg-background rounded-lg p-4 border-l-2 border-foreground">
                       <p className="mb-2">{feedback.answer}</p>
-                      <p className="text-xs text-muted-foreground">- {userProfile?.name || "User"}</p>
+                     
                     </div>
                   )}
                 </div>
@@ -275,26 +280,7 @@ const PublicWallView = () => {
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="bg-background border-t border-border mt-12">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">∞</span>
-              <span>© 2025 Spillr</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <Link to="/terms" className="hover:underline underline-offset-4">
-                Terms & Conditions
-              </Link>
-              <span aria-hidden="true">-</span>
-              <Link to="/privacy" className="hover:underline underline-offset-4">
-                Privacy Policy
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+     <Footer />
     </div>
   )
 }

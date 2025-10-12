@@ -1,22 +1,21 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { feedbackService } from '../services/feedbackService.js';
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { feedbackService } from "../services/feedbackService.js";
 
+// -------------------------------------------------------------
+// 1️⃣ SUBMIT FEEDBACK (public users)
+// -------------------------------------------------------------
 export const useFeedbackSubmission = (wallSlug) => {
-  const [formData, setFormData] = useState({
-    question: ''
-  });
+  const [formData, setFormData] = useState({ question: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const validateForm = () => {
     const validation = feedbackService.validateQuestion(formData.question);
-    
     if (!validation.isValid) {
       setErrors({ question: validation.error });
       return false;
     }
-    
     setErrors({});
     return true;
   };
@@ -24,31 +23,22 @@ export const useFeedbackSubmission = (wallSlug) => {
   const handleChange = (e) => {
     const value = e.target.value;
     setFormData({ question: value });
-    
-    if (errors.question) {
-      setErrors({});
-    }
-    
-    if (success) {
-      setSuccess(false);
-    }
+    if (errors.question) setErrors({});
+    if (success) setSuccess(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
 
     try {
       setLoading(true);
       await feedbackService.submit({
         question: formData.question,
-        wallSlug
+        wallSlug,
       });
-      
       setSuccess(true);
-      setFormData({ question: '' });
-      
+      setFormData({ question: "" });
     } catch (error) {
       setErrors({ submit: error.message });
     } finally {
@@ -57,7 +47,7 @@ export const useFeedbackSubmission = (wallSlug) => {
   };
 
   const resetForm = useCallback(() => {
-    setFormData({ question: '' });
+    setFormData({ question: "" });
     setErrors({});
     setSuccess(false);
   }, []);
@@ -71,10 +61,13 @@ export const useFeedbackSubmission = (wallSlug) => {
     handleSubmit,
     resetForm,
     characterCount: formData.question.length,
-    maxCharacters: 1000
+    maxCharacters: 1000,
   };
 };
 
+// -------------------------------------------------------------
+// 2️⃣ PUBLIC FEEDBACK (view + reactions)
+// -------------------------------------------------------------
 export const usePublicFeedback = (wallSlug) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -82,14 +75,11 @@ export const usePublicFeedback = (wallSlug) => {
 
   const fetchFeedback = useCallback(async () => {
     if (!wallSlug) return;
-    
     try {
       setLoading(true);
       setError(null);
-      
       const data = await feedbackService.getPublic(wallSlug);
       setFeedbacks(Array.isArray(data) ? data : []);
-      
     } catch (error) {
       setError(error.message);
     } finally {
@@ -104,13 +94,11 @@ export const usePublicFeedback = (wallSlug) => {
   const addReaction = useCallback(async (feedbackId, emoji) => {
     try {
       const updatedFeedback = await feedbackService.react(feedbackId, emoji);
-      
-      setFeedbacks(prev => prev.map(f => 
-        f._id === feedbackId ? updatedFeedback : f
-      ));
-      
+      setFeedbacks((prev) =>
+        prev.map((f) => (f._id === feedbackId ? updatedFeedback : f))
+      );
     } catch (error) {
-      console.error('Reaction error:', error);
+      console.error("Reaction error:", error);
     }
   }, []);
 
@@ -119,10 +107,13 @@ export const usePublicFeedback = (wallSlug) => {
     loading,
     error,
     refetch: fetchFeedback,
-    addReaction
+    addReaction,
   };
 };
 
+// -------------------------------------------------------------
+// 3️⃣ OWNER FEEDBACK (dashboard + management)
+// -------------------------------------------------------------
 export const useOwnerFeedback = (slug) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [pagination, setPagination] = useState({
@@ -130,83 +121,90 @@ export const useOwnerFeedback = (slug) => {
     totalPages: 1,
     totalFeedbacks: 0,
     hasNextPage: false,
-    hasPrevPage: false
+    hasPrevPage: false,
+  });
+  const [stats, setStats] = useState({
+    total: 0,
+    answered: 0,
+    archived: 0,
+    active: 0,
+    answerRate: 0,
   });
   const [filters, setFilters] = useState({
-    sort: 'active',
+    sort: "active",
     page: 1,
     limit: 10,
-    search: ''
+    search: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchFeedback = useCallback(async () => {
-  if (!slug) return;
-
-  try {
-    setLoading(true);
-    setError(null);
-
-    const data = await feedbackService.getForOwner(slug, filters);
-    setFeedbacks(data.feedbacks || []);
-    setPagination(data.pagination || {});
-  } catch (error) {
-    setError(error.message);
-  } finally {
-    setLoading(false);
-  }
-}, [slug, filters]);
-
+    if (!slug) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await feedbackService.getForOwner(slug, filters);
+      setFeedbacks(data.feedbacks || []);
+      setPagination(data.pagination || {});
+      // Get stats from backend response instead of computing locally
+      setStats(data.stats || {
+        total: 0,
+        answered: 0,
+        archived: 0,
+        active: 0,
+        answerRate: 0,
+      });
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [slug, filters]);
 
   useEffect(() => {
     fetchFeedback();
   }, [fetchFeedback]);
 
   const updateFilters = useCallback((newFilters) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       ...newFilters,
-      page: newFilters.page || 1
+      page: newFilters.page || 1,
     }));
   }, []);
 
   const changePage = useCallback((page) => {
-    setFilters(prev => ({ ...prev, page }));
+    setFilters((prev) => ({ ...prev, page }));
   }, []);
 
   const answerFeedback = useCallback(async (feedbackId, answer) => {
     try {
       const updatedFeedback = await feedbackService.answer(feedbackId, answer);
-      
-      setFeedbacks(prev => prev.map(f => 
-        f._id === feedbackId ? updatedFeedback : f
-      ));
-      
+      setFeedbacks((prev) =>
+        prev.map((f) => (f._id === feedbackId ? updatedFeedback : f))
+      );
       return updatedFeedback;
     } catch (error) {
       throw error;
     }
   }, []);
 
-  const archiveFeedback = useCallback(async (feedbackId, archived = true) => {
-    try {
-      await feedbackService.archive(feedbackId, archived);
-      
-      if (filters.sort !== 'archived') {
-        setFeedbacks(prev => prev.filter(f => f._id !== feedbackId));
-      } else {
-        fetchFeedback();
+  const archiveFeedback = useCallback(
+    async (feedbackId, archived = true) => {
+      try {
+        await feedbackService.archive(feedbackId, archived);
+        if (filters.sort !== "archived") {
+          setFeedbacks((prev) => prev.filter((f) => f._id !== feedbackId));
+        } else {
+          fetchFeedback();
+        }
+      } catch (error) {
+        throw error;
       }
-      
-    } catch (error) {
-      throw error;
-    }
-  }, [filters.sort, fetchFeedback]);
-
-  const stats = useMemo(() => {
-    return feedbackService.getStats(feedbacks);
-  }, [feedbacks]);
+    },
+    [filters.sort, fetchFeedback]
+  );
 
   return {
     feedbacks,
@@ -219,25 +217,24 @@ export const useOwnerFeedback = (slug) => {
     updateFilters,
     changePage,
     answerFeedback,
-    archiveFeedback
+    archiveFeedback,
   };
 };
 
+// -------------------------------------------------------------
+// 4️⃣ FEEDBACK ANSWER (modal / reply editor)
+// -------------------------------------------------------------
 export const useFeedbackAnswer = () => {
-  const [formData, setFormData] = useState({
-    answer: ''
-  });
+  const [formData, setFormData] = useState({ answer: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const validateForm = () => {
     const validation = feedbackService.validateAnswer(formData.answer);
-    
     if (!validation.isValid) {
       setErrors({ answer: validation.error });
       return false;
     }
-    
     setErrors({});
     return true;
   };
@@ -245,25 +242,16 @@ export const useFeedbackAnswer = () => {
   const handleChange = (e) => {
     const value = e.target.value;
     setFormData({ answer: value });
-    
-    if (errors.answer) {
-      setErrors({});
-    }
+    if (errors.answer) setErrors({});
   };
 
   const handleSubmit = async (feedbackId, onSuccess) => {
     if (!validateForm()) return;
-
     try {
       setLoading(true);
       const result = await feedbackService.answer(feedbackId, formData.answer);
-      
-      if (onSuccess) {
-        onSuccess(result);
-      }
-      
-      setFormData({ answer: '' });
-      
+      if (onSuccess) onSuccess(result);
+      setFormData({ answer: "" });
       return result;
     } catch (error) {
       setErrors({ submit: error.message });
@@ -274,7 +262,7 @@ export const useFeedbackAnswer = () => {
   };
 
   const resetForm = useCallback(() => {
-    setFormData({ answer: '' });
+    setFormData({ answer: "" });
     setErrors({});
   }, []);
 
@@ -286,63 +274,6 @@ export const useFeedbackAnswer = () => {
     handleSubmit,
     resetForm,
     characterCount: formData.answer.length,
-    maxCharacters: 2000
-  };
-};
-
-export const useFeedbackReactions = () => {
-  const [loading, setLoading] = useState(false);
-
-  const addReaction = useCallback(async (feedbackId, emoji) => {
-    try {
-      setLoading(true);
-      const updatedFeedback = await feedbackService.react(feedbackId, emoji);
-      return updatedFeedback;
-    } catch (error) {
-      console.error('Reaction error:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return {
-    loading,
-    addReaction
-  };
-};
-
-export const useFeedbackFilters = (initialFilters = {}) => {
-  const [filters, setFilters] = useState({
-    search: '',
-    status: 'all',
-    hasReactions: false,
-    ...initialFilters
-  });
-
-  const updateFilter = useCallback((key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  }, []);
-
-  const resetFilters = useCallback(() => {
-    setFilters({
-      search: '',
-      status: 'all',
-      hasReactions: false
-    });
-  }, []);
-
-  const applyFilters = useCallback((feedbacks) => {
-    return feedbackService.filterFeedbacks(feedbacks, filters);
-  }, [filters]);
-
-  return {
-    filters,
-    updateFilter,
-    resetFilters,
-    applyFilters
+    maxCharacters: 2000,
   };
 };

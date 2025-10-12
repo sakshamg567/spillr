@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useOwnerFeedback, useFeedbackAnswer } from '../hooks/useFeedback';
-import { useBlockManagement } from "../hooks/useUser";
+import React, { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { useOwnerFeedback, useFeedbackAnswer } from "../hooks/useFeedback";
 import toast from "react-hot-toast";
-import { 
-  MessageCircle, 
-  Reply, 
-  Archive, 
+import {
+  MessageCircle,
+  Reply,
   CheckCircle,
   Clock,
-  Ban,
-  ArchiveIcon
-} from 'lucide-react';
+} from "lucide-react";
 
 const FeedbackManagement = () => {
   const { user } = useAuth();
   const slug = user?.slug || user?.username;
+
   const {
     feedbacks,
     pagination,
@@ -26,8 +22,6 @@ const FeedbackManagement = () => {
     stats,
     updateFilters,
     changePage,
-    answerFeedback,
-    archiveFeedback
   } = useOwnerFeedback(slug);
 
   const {
@@ -36,90 +30,80 @@ const FeedbackManagement = () => {
     loading: answerLoading,
     handleChange: handleAnswerChange,
     handleSubmit: submitAnswer,
-    resetForm: resetAnswerForm
+    resetForm: resetAnswerForm,
   } = useFeedbackAnswer();
 
-  const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [showAnswerForm, setShowAnswerForm] = useState(null);
-  const { blockUser, blockIP, loading: blockLoading } = useBlockManagement();
-
-
-  const handleBlock = async (feedback) => {
-  if (!window.confirm("Are you sure you want to block this user or IP?")) return;
-
-  try {
-    let success = false;
-
-    // Try user block first
-    const userIdToBlock =
-      typeof feedback.userId === "object"
-        ? feedback.userId._id
-        : feedback.userId;
-
-    if (userIdToBlock) {
-      await blockUser(userIdToBlock);
-      success = true;
-    }
-
-    // If no user, fallback to IP
-    if (!success && feedback.ipAddress) {
-      await blockIP(feedback.ipAddress);
-      success = true;
-    }
-
-    if (success) {
-     toast.success("User/IP blocked successfully 🚫");
-    } else {
-      toast.error("No user ID or IP found to block");
-    }
-  } catch (err) {
-    console.error("Error blocking:", err);
-   toast.error("Failed to block user");
-  }
-};
-
 
   const handleAnswerSubmit = async (feedbackId) => {
     try {
-      await submitAnswer(feedbackId, (updatedFeedback) => {
+      await submitAnswer(feedbackId, () => {
         setShowAnswerForm(null);
         resetAnswerForm();
+        toast.success("Response posted successfully! ✅");
       });
     } catch (error) {
-      console.error('Answer submission error:', error);
+      console.error("Answer submission error:", error);
+      toast.error("Failed to post response");
     }
   };
 
-  const handleArchive = async (feedbackId, archived = true) => {
-    try {
-      await archiveFeedback(feedbackId, archived);
-    } catch (error) {
-      console.error('Archive error:', error);
-    }
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    updateFilters({ search: searchQuery, page: 1 });
-  };
-
+ 
   const getStatusBadge = (feedback) => {
-    if (feedback.isArchived) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
-          <ArchiveIcon className="w-3 h-3" />
-          Archived
-        </span>
-      );
-    }
-    if (feedback.isAnswered) {
+    if (feedback.isAnswered)
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
           <CheckCircle className="w-3 h-3" />
           Answered
         </span>
       );
+
+      // inside useOwnerFeedback
+const fetchFeedback = async (overrides = {}) => {
+  try {
+    setLoading(true);
+    const qs = new URLSearchParams({
+      sort: filters.sort || 'active',
+      page: String(filters.page || 1),
+      limit: String(filters.limit || 10),
+      ...(overrides || {}),
+    }).toString();
+
+    const res = await fetch(`${API_BASE_URL}/api/feedback/owner/${slug}?${qs}`, {
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to fetch feedback');
     }
+
+    const body = await res.json();
+
+    
+    setFeedbacks(body.feedbacks || []);
+    setPagination(body.pagination || {});
+    setStats(body.stats || { total: 0, answered: 0, archived: 0, active: 0, answerRate: 0 });
+
+  } catch (err) {
+    setError(err.message || 'Unable to fetch feedback');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const updateFilters = (partial) => {
+  setFilters(prev => {
+    const next = { ...prev, ...partial };
+    return next;
+  });
+  
+  setTimeout(() => { 
+    fetchFeedback({ sort: partial.sort, page: 1 });
+  }, 0);
+};
+
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
         <Clock className="w-3 h-3" />
@@ -128,7 +112,8 @@ const FeedbackManagement = () => {
     );
   };
 
-  if (loading && !feedbacks.length) {
+
+  if (loading && !feedbacks.length)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -137,14 +122,15 @@ const FeedbackManagement = () => {
         </div>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-4">
           <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Error Loading Feedback</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Error Loading Feedback
+          </h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
@@ -155,53 +141,43 @@ const FeedbackManagement = () => {
         </div>
       </div>
     );
-  }
 
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Feedback Management</h1>
-              <p className="text-gray-600 mt-1">Manage and respond to feedback on your wall</p>
-            </div>
-            
-          </div>
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Messages
+          </h1>
+          
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats */}
-      
-
-        {/* Filters & Search */}
-        <div className="bg-white rounded-lg shadow-sm border mb-6">
-          <div className="p-6 border-b">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              {/* Search */}
-            
-          {/* Filter Tabs */}
-              <div className="flex items-center bg-gray-100 p-1 rounded-lg">
-                {[
-                  { key: 'active', label: 'Active', count: stats.active },
-                  { key: 'answered', label: 'Answered', count: stats.answered },
-                  { key: 'archived', label: 'Archived', count: stats.archived }
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => updateFilters({ sort: tab.key, page: 1 })}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                      filters.sort === tab.key
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    {tab.label} ({tab.count})
-                  </button>
-                ))}
-              </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Filter Tabs */}
+        <div className=" rounded-lg   mb-6">
+          <div className="p-6">
+           
+            <div className="flex flex-wrap items-center  p-1  rounded-lg gap-3"> Sort by:
+              {[
+  { key: "active", label: "Active", count: stats?.active },
+  { key: "answered", label: "Answered", count: stats?.answered   },
+  
+].map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => updateFilters({ sort: tab.key, page: 1 })}
+                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    filters.sort === tab.key
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -212,13 +188,14 @@ const FeedbackManagement = () => {
             <div className="p-12 text-center">
               <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {filters.search ? 'No matching feedback found' : 'No feedback yet'}
+                {filters.search
+                  ? "No matching feedback found"
+                  : "No feedback yet"}
               </h3>
               <p className="text-gray-500">
-                {filters.search 
-                  ? 'Try adjusting your search terms or filters'
-                  : 'Feedback will appear here once people start submitting to your wall'
-                }
+                {filters.search
+                  ? "Try adjusting your search terms or filters"
+                  : "Feedback will appear here once people start submitting"}
               </p>
             </div>
           ) : (
@@ -230,176 +207,90 @@ const FeedbackManagement = () => {
                       <div className="flex items-center gap-3 mb-2">
                         {getStatusBadge(feedback)}
                         <span className="text-sm text-gray-500">
-                          {new Date(feedback.createdAt).toLocaleDateString()} at{' '}
+                          {new Date(feedback.createdAt).toLocaleDateString()} •{" "}
                           {new Date(feedback.createdAt).toLocaleTimeString()}
                         </span>
                       </div>
-                      
+
                       {/* Question */}
                       <div className="bg-gray-50 p-4 rounded-lg mb-4">
                         <p className="text-gray-900">{feedback.question}</p>
                       </div>
 
-                      {/* Answer */}
+                      {/* Answer Section */}
                       {feedback.answer && (
                         <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400 mb-4">
                           <p className="text-gray-900">{feedback.answer}</p>
                           <p className="text-sm text-blue-700 mt-2">
-                            Your response • {new Date(feedback.updatedAt).toLocaleDateString()}
+                            Your response •{" "}
+                            {new Date(feedback.updatedAt).toLocaleDateString()}
                           </p>
-                        </div>
-                      )}
-
-                      {/* Answer Form */}
-                      {showAnswerForm === feedback._id && (
-                        <div className="border rounded-lg p-4 bg-gray-50 mb-4">
-                          <h4 className="font-medium text-gray-900 mb-3">Write your response</h4>
-                          
-                          {answerErrors.submit && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm mb-3">
-                              {answerErrors.submit}
-                            </div>
-                          )}
-
-                          <textarea
-                            placeholder="Type your response..."
-                            value={answerFormData.answer}
-                            onChange={handleAnswerChange}
-                            rows={4}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                          />
-                          
-                          {answerErrors.answer && (
-                            <p className="text-red-500 text-sm mt-1">{answerErrors.answer}</p>
-                          )}
-
-                          <div className="flex justify-between items-center mt-3">
-                            <span className="text-sm text-gray-500">
-                              {answerFormData.answer.length}/2000 characters
-                            </span>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  setShowAnswerForm(null);
-                                  resetAnswerForm();
-                                }}
-                                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => handleAnswerSubmit(feedback._id)}
-                                disabled={answerLoading || !answerFormData.answer.trim()}
-                                className="px-4 py-2 bg-black text-white rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
-                              >
-                                {answerLoading ? 'Posting...' : 'Post Response'}
-                              </button>
-                        
-
-
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-
-                      {/* Reactions */}
-                      {feedback.reactions && Object.keys(feedback.reactions).length > 0 && (
-                        <div className="flex items-center gap-2 mb-4">
-                          <span className="text-sm text-gray-600">Reactions:</span>
-                          {Object.entries(feedback.reactions).map(([emoji, count]) => (
-                            <span key={emoji} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-sm">
-                              {emoji} {count}
-                            </span>
-                          ))}
                         </div>
                       )}
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 ml-4">
-                      {!feedback.isAnswered && !feedback.isArchived && (
+                    <div className="flex items-center gap-2 ml-2">
+                      {!feedback.isAnswered && (
                         <button
-                          onClick={() => setShowAnswerForm(showAnswerForm === feedback._id ? null : feedback._id)}
-                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                          title="Reply to feedback"
+                          onClick={() =>
+                            setShowAnswerForm(
+                              showAnswerForm === feedback._id
+                                ? null
+                                : feedback._id
+                            )
+                          }
+                          className="p-2 hover:text-gray-400 text-gray-600 transition-colors"
+                          title="Reply"
                         >
-                          <Reply className="w-5 h-5" />
+                          <Reply className="w-6 h-6" />
                         </button>
                       )}
-                      
-                      <button
-                        onClick={() => handleArchive(feedback._id, !feedback.isArchived)}
-                        className="p-2 text-gray-400 hover:text-yellow-600 transition-colors"
-                        title={feedback.isArchived ? 'Unarchive' : 'Archive'}
-                      >
-                        <Archive className="w-5 h-5" />
-                      </button>
-                            <button
-  onClick={() => handleBlock(feedback)}
-  disabled={blockLoading}
-  className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-  title="Block user or IP"
->
-  <Ban className="w-5 h-5" />
-</button>
                     </div>
                   </div>
+
+                  {/* Answer Form */}
+                  {showAnswerForm === feedback._id && (
+                    <div className="border rounded-lg p-4 bg-gray-50 mb-4">
+                      <h4 className="font-medium text-gray-900 mb-3">
+                        Write your response
+                      </h4>
+
+                      <textarea
+                        placeholder="Type your response..."
+                        value={answerFormData.answer}
+                        onChange={handleAnswerChange}
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      />
+
+                      <div className="flex justify-end gap-2 mt-3">
+                        <button
+                          onClick={() => {
+                            setShowAnswerForm(null);
+                            resetAnswerForm();
+                          }}
+                          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleAnswerSubmit(feedback._id)}
+                          disabled={
+                            answerLoading || !answerFormData.answer.trim()
+                          }
+                          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400"
+                        >
+                          {answerLoading ? "Posting..." : "Post Response"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between mt-6">
-            <div className="text-sm text-gray-500">
-              Showing {((pagination.currentPage - 1) * 10) + 1} to{' '}
-              {Math.min(pagination.currentPage * 10, pagination.totalFeedbacks)} of{' '}
-              {pagination.totalFeedbacks} results
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => changePage(pagination.currentPage - 1)}
-                disabled={!pagination.hasPrevPage}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-              >
-                Previous
-              </button>
-              
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                  const pageNum = i + Math.max(1, pagination.currentPage - 2);
-                  if (pageNum > pagination.totalPages) return null;
-                  
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => changePage(pageNum)}
-                      className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                        pageNum === pagination.currentPage
-                          ? 'bg-black text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <button
-                onClick={() => changePage(pagination.currentPage + 1)}
-                disabled={!pagination.hasNextPage}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

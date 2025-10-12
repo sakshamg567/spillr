@@ -107,30 +107,17 @@ export const userService = {
       throw error;
     }
   },
-
-  requestAccountDeletion: async (currentPassword) => {
-    try {
-      return await apiRequest('/api/settings/request-account-deletion', {
-        method: 'POST',
-        body: JSON.stringify({ currentPassword })
-      });
-    } catch (error) {
-      console.error('Request account deletion error:', error);
-      throw error;
-    }
-  },
-
-  confirmAccountDeletion: async (token, userId) => {
-    try {
-      return await apiRequest('/api/settings/confirm-account-deletion', {
-        method: 'POST',
-        body: JSON.stringify({ token, userId })
-      });
-    } catch (error) {
-      console.error('Confirm account deletion error:', error);
-      throw error;
-    }
-  },
+deleteAccount: async (currentPassword) => {
+  try {
+    return await apiRequest('/api/settings/delete-account', {
+      method: 'DELETE',
+      body: JSON.stringify({ currentPassword })
+    });
+  } catch (error) {
+    console.error('Account deletion error:', error);
+    throw error;
+  }
+},
 
   validateBio: (bio) => {
     if (bio && bio.length > 500) {
@@ -166,40 +153,37 @@ export const userService = {
   },
 
   validatePasswordStrength: (password) => {
-    const feedback = [];
-    let score = 0;
+  const feedback = [];
+  let score = 0;
 
-    if (!password) {
-      return { isValid: false, score: 0, feedback: ['Password is required'] };
-    }
+  if (!password) {
+    return { isValid: false, score: 0, feedback: ["Password is required"] };
+  }
 
-    if (password.length >= 12) score += 2;
-    else if (password.length >= 8) score += 1;
-    else feedback.push('Password should be at least 12 characters');
+  if (password.length >= 6) score += 2;
+  else feedback.push("Password should be at least 6 characters");
 
-    if (/[a-z]/.test(password)) score += 1;
-    else feedback.push('Add lowercase letters');
+  if (/[a-z]/.test(password)) score += 1;
+  else feedback.push("Add lowercase letters");
 
-    if (/[A-Z]/.test(password)) score += 1;
-    else feedback.push('Add uppercase letters');
+  if (/[A-Z]/.test(password)) score += 1;
+  else feedback.push("Add uppercase letters");
 
-    if (/\d/.test(password)) score += 1;
-    else feedback.push('Add numbers');
+  if (/\d/.test(password)) score += 1;
+  else feedback.push("Add numbers");
 
-    if (/[@$!%*?&]/.test(password)) score += 1;
-    else feedback.push('Add special characters (@$!%*?&)');
+  if (password.length > 128) {
+    feedback.push("Password is too long (max 128 characters)");
+    score = 0;
+  }
 
-    if (password.length > 128) {
-      feedback.push('Password is too long (max 128 characters)');
-      score = 0;
-    }
+  return {
+    isValid: score >= 4 && feedback.length === 0, // 6+ chars + a-z + A-Z + number
+    score: Math.min(score, 5),
+    feedback,
+  };
+},
 
-    return {
-      isValid: score >= 5 && feedback.length === 0,
-      score: Math.min(score, 6),
-      feedback
-    };
-  },
 
   validateProfilePicture: (file) => {
     if (!file) {
