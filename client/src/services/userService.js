@@ -107,17 +107,30 @@ export const userService = {
       throw error;
     }
   },
-deleteAccount: async (currentPassword) => {
-  try {
-    return await apiRequest('/api/settings/delete-account', {
-      method: 'DELETE',
-      body: JSON.stringify({ currentPassword })
-    });
-  } catch (error) {
-    console.error('Account deletion error:', error);
-    throw error;
-  }
-},
+requestAccountDeletion: async (currentPassword) => {
+    try {
+      return await apiRequest('/api/settings/request-account-deletion', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword })
+      });
+    } catch (error) {
+      console.error('Request account deletion error:', error);
+      throw error;
+    }
+  },
+
+  confirmAccountDeletion: async (token, userId) => {
+    try {
+      return await apiRequest('/api/settings/confirm-account-deletion', {
+        method: 'POST',
+        body: JSON.stringify({ token, userId })
+      });
+    } catch (error) {
+      console.error('Confirm account deletion error:', error);
+      throw error;
+    }
+  },
+
 
   validateBio: (bio) => {
     if (bio && bio.length > 500) {

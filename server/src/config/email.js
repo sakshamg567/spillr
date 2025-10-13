@@ -8,7 +8,7 @@ if (process.env.EMAIL_HOST && process.env.EMAIL_PORT && process.env.EMAIL_USER &
    transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: parseInt(process.env.EMAIL_PORT, 10),
-  secure: process.env.EMAIL_PORT === "587",
+  secure: process.env.EMAIL_PORT === "465",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,

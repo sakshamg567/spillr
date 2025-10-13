@@ -88,7 +88,7 @@ const userSchema = new mongoose.Schema(
       default: "public",
     },
     emailNotifications: {
-      newFeedback: { type: Boolean, default: true },
+      newFeedback: { type: Boolean, default: false },
     },
 
     accountDeletionToken: {

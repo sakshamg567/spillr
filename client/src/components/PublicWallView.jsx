@@ -1,9 +1,10 @@
 "use client"
 import toast from 'react-hot-toast';
 import { useState, useEffect } from "react"
-import { useParams, Link } from "react-router-dom"
-import { Send, MessageCircle, Eye } from "lucide-react"
+import { useParams, Link,useNavigate  } from "react-router-dom"
+import { Send, MessageCircle } from "lucide-react"
 import Footer from './Footer';
+import { useAuth } from '../hooks/useAuth';
 
 const PublicWallView = () => {
   const { slug } = useParams()
@@ -14,7 +15,8 @@ const PublicWallView = () => {
   const [userProfile, setUserProfile] = useState(null)
   const [answeredFeedbacks, setAnsweredFeedbacks] = useState([])
   const [loadingProfile, setLoadingProfile] = useState(true)
-
+  const navigate = useNavigate()
+  const { user, isAuthenticated } = useAuth()
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
 
   useEffect(() => {
@@ -103,7 +105,9 @@ const PublicWallView = () => {
   setLoading(false);
 }
   }
-
+const handleNavigation = (path) => {
+    navigate(path)
+  }
   if (loadingProfile) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -122,12 +126,12 @@ const PublicWallView = () => {
           <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Wall Not Found</h1>
           <p className="text-muted-foreground mb-6">{error}</p>
-          <Link
-            to="/"
+           <button
+            onClick={() => navigate('/')}
             className="inline-block rounded-lg border border-foreground px-6 py-3 font-medium bg-foreground text-background hover:opacity-90 transition"
           >
             Go Home
-          </Link>
+          </button>
         </div>
       </div>
     )
@@ -136,36 +140,60 @@ const PublicWallView = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-<header className="fixed top-0 w-full z-50 backdrop-blur-lg bg-white/10 border-b border-white/10 shadow-md">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      {/* Logo */}
-        <div className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide  transition-opacity duration-500">
-          Spillr
-        </div>
-    
+ <header className="fixed top-0 w-full z-50 backdrop-blur-lg bg-white/10 border-b border-white/10 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Logo - clickable to home */}
+            <button
+              className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide transition-opacity duration-500 hover:opacity-80"
+            >
+              Spillr
+            </button>
 
-      {/* Nav Links */}
-      <nav className="flex flex-wrap items-center gap-3 text-sm text-gray-800">
-        <Link to="/" className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg ">
-          Home
-        </Link>
-        <Link to="/about" className="hidden sm:inline hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg">
-          About Us
-        </Link>
-        <Link to="/contact" className="hidden sm:inline hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg">
-          Contact Us
-        </Link>
-        <Link to="/register" className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg ">
-          Register
-        </Link>
-        <Link to="/login" className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg ">
-          Login
-        </Link>
-      </nav>
-    </div>
-  </div>
-</header>
+            {/* Nav Links */}
+            <nav className="flex flex-wrap items-center gap-3 text-sm text-gray-800">
+              <button
+                onClick={() => handleNavigation('/')}
+                className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition"
+              >
+                Home
+              </button>
+              
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => handleNavigation('/dashboard')}
+                    className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition"
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('/settings')}
+                    className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition"
+                  >
+                    Settings
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleNavigation('/')}
+                    className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition"
+                  >
+                    Register
+                  </button>
+                  <button
+                    onClick={() => handleNavigation('/')}
+                    className="hover:text-gray-900 hover:bg-gray-100 p-2 rounded-lg transition"
+                  >
+                    Login
+                  </button>
+                </>
+              )}
+            </nav>
+          </div>
+        </div>
+      </header>
 
 
       {/* Main Content */}

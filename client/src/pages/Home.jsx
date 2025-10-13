@@ -49,6 +49,12 @@ const Home = () => {
   const [hideTitle, setHideTitle] = useState(false)
 const { loading, authMode, setAuthMode, user, logout, isAuthenticated } = useAuth()
 
+ useEffect(() => {
+    if (isAuthenticated && location.pathname === '/') {
+      console.log(" Auto-redirecting authenticated user to dashboard")
+      navigate("/dashboard", { replace: true })
+    }
+  }, [isAuthenticated, navigate, location.pathname])
 
   useEffect(() => {
     const handleScroll = () => setHideTitle(window.scrollY > 10)
@@ -56,11 +62,6 @@ const { loading, authMode, setAuthMode, user, logout, isAuthenticated } = useAut
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
- useEffect(() => {
-    if (isAuthenticated && location.pathname === '/') {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [isAuthenticated, navigate, location.pathname]);
 
 if (loading) return <LoadingCard />
 
@@ -68,14 +69,19 @@ if (loading) return <LoadingCard />
 
   const handleRegisterSuccess = () => {
     setAuthMode(null)
-    navigate("/dashboard", { replace: true })
+    setTimeout(() => {
+      console.log("Navigating to dashboard after registration")
+      navigate("/dashboard", { replace: true })
+    }, 100)
   }
 
   const handleLoginSuccess = () => {
     setAuthMode(null)
-    navigate("/dashboard", { replace: true })
+    setTimeout(() => {
+      console.log("Navigating to dashboard after login")
+      navigate("/dashboard", { replace: true })
+    }, 100)
   }
- 
 
   return (
     <motion.div className="min-h-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -197,7 +203,7 @@ if (loading) return <LoadingCard />
                   whileTap={{ scale: 0.98 }}
                   transition={{ duration: 0.25, ease: "easeOut" }}
                   onClick={logout}
-                  className="mt-8 gradient-primary flex items-center gap-2 px-3 py-2 text-black  font-semibold shadow-glow text-lg hover:shadow-elegant hover:scale-105 active:scale-95 transition-all duration-200 group bg-white/20 backdrop-blur-md border border-white/10 shadow-lg rounded-full"
+                  className="mt-8 gradient-primary flex items-center gap-2 px-3 py-2 text-black  font-normal shadow-xl  text-lg hover:shadow-elegant hover:scale-105 active:scale-95 transition-all duration-200 group bg-white/20 backdrop-blur-md border border-white/10 shadow-lg rounded-full"
                 >
                   <span className="tracking-tight">Logout</span>
                 </motion.button>
@@ -213,7 +219,9 @@ if (loading) return <LoadingCard />
                   onClick={() => setAuthMode("register")}
                   className="mt-8 gradient-primary flex items-center gap-2 px-3 py-2 text-black  font-semibold shadow-glow text-lg hover:shadow-elegant hover:scale-105 active:scale-95 transition-all duration-200 group bg-white/20 backdrop-blur-md border border-white/10 shadow-lg rounded-full"
                 >
-                  <span className="tracking-tight font-normal text-lg">Get Started</span>
+                  <span className="tracking-tight font-normal text-lg">
+                  {isAuthenticated ? "Go to Dashboard" : "Get Started"}
+                </span>
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </motion.button>
               )}

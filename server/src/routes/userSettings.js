@@ -61,12 +61,11 @@ const validatePassword = (password) => {
   return (
     password &&
     typeof password === "string" &&
-    password.length >= 6 && 
+    password.length >= 8 &&
     password.length <= 128 &&
-    /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password) 
+    /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
   );
 };
-
 
 const sanitizeFilename = (filename) => {
   return filename
@@ -131,7 +130,6 @@ router.get("/me", authMiddleware, async (req, res) => {
     }
 
     const userObj = user.toObject();
-    
 
     res.json(userObj);
   } catch (error) {
@@ -146,7 +144,7 @@ router.patch(
   async (req, res) => {
     try {
       const updates = req.body;
-      const allowedUpdates = ["bio", "socialLinks", "profileVisibility"];
+      const allowedUpdates = ["name", "username", "bio", "socialLinks"];
       const isValid = Object.keys(updates).every((key) =>
         allowedUpdates.includes(key)
       );
@@ -156,6 +154,42 @@ router.patch(
           .status(400)
           .json({ message: "Invalid field in update request" });
       }
+      if (updates.name !== undefined) {
+        if (!validateName(updates.name)) {
+          return res
+            .status(400)
+            .json({ message: "Name must be 2-50 characters long" });
+        }
+        updates.name = validator.escape(updates.name.trim());
+      }
+
+       if (updates.username !== undefined) {
+        const normalizedUsername = updates.username.trim().toLowerCase();
+        
+        if (!validateUsername(normalizedUsername)) {
+          return res
+            .status(400)
+            .json({ message: "Username must be 3-30 characters with letters, numbers, and underscores" });
+        }
+
+         const existingUser = await User.findOne({ 
+          username: normalizedUsername,
+          _id: { $ne: req.user.id }
+        });
+
+        if (existingUser) {
+          return res.status(400).json({ message: "Username already taken" });
+        }
+
+        updates.username = normalizedUsername;
+
+        const wall = await Wall.findOne({ ownerId: req.user.id });
+        if (wall) {
+          wall.username = normalizedUsername;
+          wall.slug = normalizedUsername;
+          await wall.save();
+        }
+      }
 
       if (updates.bio !== undefined) {
         if (typeof updates.bio !== "string" || updates.bio.length > 500) {
@@ -164,15 +198,6 @@ router.patch(
             .json({ message: "Bio must be a string with max 500 characters" });
         }
         updates.bio = validator.escape(updates.bio.trim());
-      }
-
-      if (updates.profileVisibility !== undefined) {
-        const validVisibilities = ["public", "private", "friends"];
-        if (!validVisibilities.includes(updates.profileVisibility)) {
-          return res
-            .status(400)
-            .json({ message: "Invalid profile visibility option" });
-        }
       }
 
       if (updates.socialLinks !== undefined) {
@@ -280,7 +305,7 @@ router.patch(
         }
         return res.status(404).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
       }
-      
+
       if (oldProfilePicture && oldProfilePicture.startsWith("/uploads/")) {
         const oldFilePath = path.join(
           uploadDir,
@@ -339,7 +364,7 @@ router.patch(
         req.user.id,
         { emailNotifications: updates },
         {
-          new: true,
+          new: false,
           runValidators: true,
           select:
             "-passwordHash -googleId -accountDeletionToken -accountDeletionTokenExpiry",
@@ -357,7 +382,6 @@ router.patch(
     }
   }
 );
-
 
 router.post(
   "/change-password",
@@ -462,7 +486,7 @@ router.post(
       if (transporter) {
         try {
           const confirmationUrl = `${
-            process.env.FRONTEND_URL || "http://localhost:5173"
+            process.env.FRONTEND_URL 
           }/confirm-deletion`;
 
           const mailOptions = {
@@ -545,20 +569,35 @@ router.post("/confirm-account-deletion", async (req, res) => {
         .json({ message: "Deletion token has expired. Please request again." });
     }
 
-    await User.findByIdAndDelete(userId);
-
     try {
-      const userFiles = fs
-        .readdirSync(uploadDir)
-        .filter((file) => file.startsWith(`user-${userId}-`));
-      for (const file of userFiles) {
-        await unlink(path.join(uploadDir, file));
-      }
-    } catch (cleanupError) {
-      console.error("Failed to cleanup user files:", cleanupError.message);
-    }
+      await Wall.deleteMany({ ownerId: userId });
+      
+      await Feedback.deleteMany({ userId: userId });
 
-    res.json({ message: "Account deleted successfully" });
+      const userWalls = await Wall.find({ ownerId: userId }).select("_id");
+      const wallIds = userWalls.map(w => w._id);
+      await Feedback.deleteMany({ wallId: { $in: wallIds } });
+      
+      await User.findByIdAndDelete(userId);
+
+      try {
+        const userFiles = fs
+          .readdirSync(uploadDir)
+          .filter((file) => file.startsWith(`user-${userId}-`));
+        for (const file of userFiles) {
+          await unlink(path.join(uploadDir, file));
+        }
+      } catch (cleanupError) {
+        console.error("Failed to cleanup user files:", cleanupError.message);
+      }
+
+      res.json({ message: "Account and all associated data deleted successfully" });
+    } catch (deleteError) {
+      console.error("Cascade deletion error:", deleteError);
+      return res.status(500).json({ 
+        message: "Failed to delete account completely. Please contact support." 
+      });
+    }
   } catch (error) {
     console.error("Account deletion confirmation error:", error.message);
     res.status(500).json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
@@ -566,7 +605,7 @@ router.post("/confirm-account-deletion", async (req, res) => {
 });
 
 router.get("/confirm-account-deletion", async (req, res) => {
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const frontendUrl = process.env.FRONTEND_URL ;
   res.redirect(
     `${frontendUrl}/confirm-deletion?${new URLSearchParams(
       req.query

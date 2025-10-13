@@ -132,3 +132,26 @@ export const validateText = (text, options = {}) => {
   
   return null; 
 };
+
+export const validateUsername = (username) => {
+  if (!username) {
+    return "Username is required";
+  }
+  
+  if (username.length < 3) {
+    return "Username must be at least 3 characters long";
+  }
+  
+  if (username.length > 20) {
+    return "Username must be less than 20 characters";
+  }
+  
+ 
+  const usernameRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9_-]+$/;
+
+  if (!usernameRegex.test(username)) {
+    return "Username can only contain letters, numbers, underscores, and hyphens";
+  }
+  
+  return null;
+};

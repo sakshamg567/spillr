@@ -23,7 +23,7 @@ export const useUser = (autoFetch = true) => {
       setLoading(false);
       setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
 
   const updateProfile = useCallback(async (profileData) => {
     if (isOperationPending) return;
@@ -40,7 +40,7 @@ export const useUser = (autoFetch = true) => {
       setLoading(false);
       setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
 
   const uploadProfilePicture = useCallback(async (file) => {
     if (isOperationPending) return;
@@ -70,17 +70,18 @@ export const useUser = (autoFetch = true) => {
       return response;
     } catch (err) {
       setError(err.message || 'Failed to update notifications');
+      throw err;
     } finally {
       setLoading(false);
       setIsOperationPending(false);
     }
-  }, []);
+  }, [isOperationPending]);
 
   useEffect(() => {
     if (autoFetch) {
       fetchProfile();
     }
-  }, [fetchProfile, autoFetch]);
+  }, [autoFetch]);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -88,6 +89,7 @@ export const useUser = (autoFetch = true) => {
     profile,
     loading,
     error,
+    isOperationPending,
     reloadProfile: fetchProfile,
     updateProfile,
     uploadProfilePicture,
@@ -96,7 +98,6 @@ export const useUser = (autoFetch = true) => {
   };
 };
 
-// ====== Password Change Hook ======
 export const usePasswordChange = () => {
   const [formData, setFormData] = useState({
     oldPassword: '',
@@ -154,6 +155,8 @@ export const usePasswordChange = () => {
 
     try {
       setLoading(true);
+      //console.log("Submitting password change", formData);
+
       await userService.changePassword({
         oldPassword: formData.oldPassword,
         newPassword: formData.newPassword
@@ -193,28 +196,45 @@ export const usePasswordChange = () => {
 export const useProfileForm = (initialData = {}) => {
   const [formData, setFormData] = useState({
     bio: '',
-    socialLinks: { twitter: '', linkedin: '', website: '', instagram: '' },
-    profileVisibility: 'public'
+    socialLinks: { twitter: '', linkedin: '', website: '', instagram: '' }
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useUser();
 
   useEffect(() => {
-  setFormData({
-    bio: initialData?.bio || '',
-    socialLinks: {
-      twitter: initialData?.socialLinks?.twitter || '',
-      linkedin: initialData?.socialLinks?.linkedin || '',
-      website: initialData?.socialLinks?.website || '',
-      instagram: initialData?.socialLinks?.instagram || ''
-    },
-    profileVisibility: initialData?.profileVisibility || 'public'
-  });
-}, [initialData]);
+    if (initialData && Object.keys(initialData).length > 0) {
+      setFormData({
+        name: initialData.name || '',
+        username: initialData.username || '',
+        bio: initialData.bio || '',
+        socialLinks: {
+          twitter: initialData.socialLinks?.twitter || '',
+          linkedin: initialData.socialLinks?.linkedin || '',
+          website: initialData.socialLinks?.website || '',
+          instagram: initialData.socialLinks?.instagram || ''
+        },
+      });
+    }
+  }, [initialData]);
+
 
   const validateForm = () => {
     const newErrors = {};
+
+        if (formData.name) {
+      const nameValidation = userService.validateName(formData.name);
+      if (!nameValidation.isValid) {
+        newErrors.name = nameValidation.error;
+      }
+    }
+
+    if (formData.username) {
+      const usernameValidation = userService.validateUsername(formData.username);
+      if (!usernameValidation.isValid) {
+        newErrors.username = usernameValidation.error;
+      }
+    }
 
     const bioValidation = userService.validateBio(formData.bio);
     if (!bioValidation.isValid) {
@@ -345,7 +365,6 @@ export const useBlockManagement = () => {
   };
 };
 
-// ====== Account Deletion Hook ======
 export const useAccountDeletion = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

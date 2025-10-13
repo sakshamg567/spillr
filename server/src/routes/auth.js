@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import authMiddleware from "../middleware/authMiddleware.js";
 import sendEmail from "../utils/sendEmail.js";
 import Wall from "../models/Wall.js";
+
 const router = express.Router();
 
 const getJWTSecret = () => {
@@ -72,6 +73,54 @@ const validateName = (name) => {
   );
 };
 
+const generateUniqueSlug = async (baseSlug) => {
+  let slug = baseSlug
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .substring(0, 20);
+
+  if (!slug || slug.length < 3) {
+    slug = `user${Date.now()}`.substring(0, 15);
+  }
+
+  let counter = 1;
+  let uniqueSlug = slug;
+
+  while (await Wall.findOne({ slug: uniqueSlug })) {
+    uniqueSlug = `${slug}${counter}`;
+    counter++;
+  }
+
+  return uniqueSlug;
+};
+
+const createWallForUser = async (userId, username, name) => {
+  try {
+    const existingWall = await Wall.findOne({ ownerId: userId });
+    if (existingWall) {
+      console.log(`Wall already exists for user ${userId}: ${existingWall.slug}`);
+      return { success: true, wall: existingWall, alreadyExists: true };
+    }
+
+    const slug = await generateUniqueSlug(username);
+    
+    const wall = await Wall.create({
+      ownerId: userId,
+      username: username,
+      slug: slug,
+    });
+    
+    console.log(`✓ Wall created successfully for user ${userId}: ${slug}`);
+    return { success: true, wall };
+  } catch (error) {
+    console.error('Failed to create wall:', error);
+    return { 
+      success: false, 
+      error: error.message,
+    };
+  }
+};
+
 // Health check route
 router.get("/health", (req, res) => {
   try {
@@ -109,32 +158,43 @@ router.get("/me", authMiddleware, async (req, res) => {
 
 router.post("/register", authLimiter, async (req, res) => {
   try {
-    const { name: rawName, email: rawEmail, password, username: rawUsername } = req.body;
+    const {
+      name: rawName,
+      email: rawEmail,
+      password,
+      username: rawUsername,
+    } = req.body;
     const name = rawName?.trim();
     const email = rawEmail?.trim();
     const username = rawUsername?.trim();
 
     if (!validateName(name)) {
-      return res.status(400).json({ message: "Name must be 2-50 characters long" });
+      return res
+        .status(400)
+        .json({ message: "Name must be 2-50 characters long" });
     }
     if (!validateEmail(email)) {
       return res.status(400).json({ message: "Invalid email format" });
     }
     if (!validateUsername(username)) {
-      return res.status(400).json({ message: "Username must be 3-30 characters..." });
+      return res
+        .status(400)
+        .json({ message: "Username must be 3-30 characters..." });
     }
     if (!validatePassword(password)) {
-      return res.status(400).json({ message: "Password must be 8-128 characters..." });
+      return res
+        .status(400)
+        .json({ message: "Password must be 8-128 characters..." });
     }
 
     const normalizedEmail = email.toLowerCase();
     const normalizedUsername = username.toLowerCase();
 
     const existingUser = await User.findOne({
-      $or: [{ email: normalizedEmail }, { username:  normalizedUsername }]
+      $or: [{ email: normalizedEmail }, { username: normalizedUsername }],
     });
     if (existingUser) {
-     if (existingUser.email === normalizedEmail) {
+      if (existingUser.email === normalizedEmail) {
         return res.status(400).json({ message: "Email already in use" });
       } else {
         return res.status(400).json({ message: "Username already in use" });
@@ -149,15 +209,18 @@ router.post("/register", authLimiter, async (req, res) => {
       passwordHash,
     });
 
+  let wallResult = { success: false };
     try {
-      await Wall.create({
-        ownerId: newUser._id,
-        username: normalizedUsername,
-        slug: normalizedUsername 
-      });
-      console.log(`✓ Wall auto-created for user: ${normalizedUsername}`);
+      wallResult = await createWallForUser(newUser._id, normalizedUsername, name);
+      
+      if (!wallResult.success) {
+        console.warn(`⚠ Wall creation failed for ${normalizedUsername}:`, wallResult.error);
+      } else if (wallResult.alreadyExists) {
+        console.log(` Using existing wall for ${normalizedUsername}`);
+      }
     } catch (wallError) {
-      console.error("Failed to create wall for new user:", wallError);
+      console.error(`Wall creation error for ${normalizedUsername}:`, wallError);
+      wallResult = { success: false, error: wallError.message };
     }
 
     const JWT_SECRET = getJWTSecret();
@@ -168,9 +231,11 @@ router.post("/register", authLimiter, async (req, res) => {
     );
 
     setTokenCookie(res, token);
-    console.log("Registration successful for:", normalizedEmail);
-
+    
     res.status(201).json({
+      success: true,
+      userCreated: true,
+      wallCreated: wallResult?.success || false,
       message: "Registration successful",
       user: {
         id: newUser._id,
@@ -178,11 +243,22 @@ router.post("/register", authLimiter, async (req, res) => {
         email: normalizedEmail,
         username: normalizedUsername,
       },
+      slug: wallResult?.wall?.slug || null,
     });
+ } catch (err) {
+    console.error("❌ Registration error:", err);
+if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `User with this ${field} already exists`,
+      });
+    }
 
-  } catch (err) {
-    console.error("Registration error:", err);
-    res.status(500).json({ message: "Registration failed" });
+    res.status(500).json({
+      success: false,
+      message: "Registration failed. Please try again.",
+    });
   }
 });
 
@@ -229,9 +305,8 @@ router.post("/login", authLimiter, async (req, res) => {
 
     setTokenCookie(res, token);
 
-    console.log("Login successful for:", normalizedEmail);
-
-    res.status(200).json({
+        res.status(200).json({
+      success: true,
       message: "Login successful",
       user: {
         id: user._id,
@@ -245,6 +320,7 @@ router.post("/login", authLimiter, async (req, res) => {
     res.status(500).json({ message: "Login failed" });
   }
 });
+
 
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
