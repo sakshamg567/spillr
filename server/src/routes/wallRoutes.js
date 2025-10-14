@@ -3,7 +3,8 @@ import { getPublicWall, getPublicFeedback } from "../controllers/wallController.
 
 const router = express.Router();
 
-router.get("/:slug", getPublicWall);
 router.get("/:slug/feedbacks", getPublicFeedback);
+router.get("/:slug", getPublicWall);
+
 
 export default router;

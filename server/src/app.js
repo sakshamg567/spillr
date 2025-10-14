@@ -13,16 +13,21 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import cookieParser from 'cookie-parser';
 import WallRoute from './routes/wallRoutes.js'
+import compression from 'compression';
 const app = express();
+app.use(compression());
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 
 const allowedOrigins = process.env.NODE_ENV === "production"
-  ? process.env.FRONTEND_URL?.split(",") || []
-  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001","https://spillr.vercel.app/"].filter(Boolean);;
+  ? (process.env.FRONTEND_URL?.split(",") || []).filter(Boolean)
+  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"];
 
+if (process.env.NODE_ENV === "production") {
+  allowedOrigins.push("https://spillr.vercel.app/");
+}
 
 app.use(
   cors({
@@ -34,7 +39,8 @@ app.use(
         callback(null, true);
       } else {
         console.warn(' CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+        callback(null, true);
+      //callback(new Error('Not allowed by CORS'));
       }
     },
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
@@ -88,6 +94,11 @@ app.use("/uploads", (req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   next();
 });
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 
 app.use("/uploads", express.static(uploadsPath, {
   maxAge: "1d",

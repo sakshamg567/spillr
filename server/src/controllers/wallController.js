@@ -38,7 +38,8 @@ export const createWallForUser = async (userId, username, name) => {
     
     
     const wall = await Wall.create({
-      ownerId: userId,  
+      ownerId: userId, 
+       username: username, 
       slug: slug,
       title: `${name}'s Wall`,
       description: 'Share your thoughts anonymously!',
@@ -111,7 +112,7 @@ export const getPublicFeedback = async (req, res) => {
   const { slug } = req.params;
   
   try {
-    const wall = await Wall.findOne({ slug: slug.toLowerCase() })
+    let wall = await Wall.findOne({ slug: slug.toLowerCase() })
       .select("_id")
       .lean();
 

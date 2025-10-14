@@ -63,23 +63,15 @@ export const validatePassword = (password, options = {}) => {
     }
   }
   
-  
   if (requireConfirm) {
     if (password !== confirmPassword) {
       return 'Passwords do not match';
     }
   }
   
-  return null; // No error
-};
-
-
-export const validateLoginPassword = (password) => {
-  if (!password || typeof password !== 'string' || password.trim().length === 0) {
-    return 'Password is required';
-  }
   return null;
 };
+
 
 export const validateName = (name) => {
   if (!name || typeof name !== 'string') {
@@ -153,5 +145,12 @@ export const validateUsername = (username) => {
     return "Username can only contain letters, numbers, underscores, and hyphens";
   }
   
+  return null;
+};
+
+export const validateLoginPassword = (password) => {
+  if (!password || typeof password !== 'string' || password.trim().length === 0) {
+    return 'Password is required';
+  }
   return null;
 };

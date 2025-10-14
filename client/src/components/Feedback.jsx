@@ -11,9 +11,9 @@ import {
 
 const FeedbackManagement = () => {
   const { user } = useAuth();
-  const slug = user?.slug || user?.username;
+const feedbackIdentifier = user?.username || user?.slug;
 
-  const {
+    const {
     feedbacks,
     pagination,
     filters,
@@ -22,7 +22,8 @@ const FeedbackManagement = () => {
     stats,
     updateFilters,
     changePage,
-  } = useOwnerFeedback(slug);
+  } = useOwnerFeedback(feedbackIdentifier);
+
 
   const {
     formData: answerFormData,
