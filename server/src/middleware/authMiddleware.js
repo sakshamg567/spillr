@@ -13,6 +13,18 @@ const getJWTSecret = () => {
   return JWT_SECRET;
 };
 
+const getCookieConfig = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  
+  return {
+    httpOnly: true,
+    secure: isProduction, 
+    sameSite: isProduction ? "none" : "lax", 
+    path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+};
+
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.cookies?.token;
@@ -26,12 +38,7 @@ const authMiddleware = async (req, res, next) => {
     const user = await User.findById(decoded.id);
 
     if (!user || !user.isActive) {
-      res.clearCookie("token", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-      });
+      res.clearCookie("token", getCookieConfig());
       return res.status(401).json({ message: "Invalid user" });
     }
 
@@ -39,13 +46,8 @@ const authMiddleware = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error("Token verification error:", error);
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
+    console.error("Token verification error:", error.message);
+    res.clearCookie("token", getCookieConfig());
     return res.status(401).json({ message: "Invalid token" });
   }
 };

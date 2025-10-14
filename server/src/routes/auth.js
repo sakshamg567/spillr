@@ -21,17 +21,17 @@ const getJWTSecret = () => {
 
   return JWT_SECRET;
 };
-
 const setTokenCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: isProduction, 
+    sameSite: isProduction ? "none" : "lax", // "none" for cross-origin
     path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
   });
 };
-
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -246,7 +246,7 @@ router.post("/register", authLimiter, async (req, res) => {
       slug: wallResult?.wall?.slug || null,
     });
  } catch (err) {
-    console.error("❌ Registration error:", err);
+    console.error(" Registration error:", err);
 if (err.code === 11000) {
       const field = Object.keys(err.keyPattern)[0];
       return res.status(400).json({
@@ -259,6 +259,7 @@ if (err.code === 11000) {
       success: false,
       message: "Registration failed. Please try again.",
     });
+    
   }
 });
 
@@ -419,7 +420,7 @@ router.post("/logout", (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
   });
 

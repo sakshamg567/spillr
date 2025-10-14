@@ -21,7 +21,7 @@ const __dirname = dirname(__filename);
 
 const allowedOrigins = process.env.NODE_ENV === "production"
   ? process.env.FRONTEND_URL?.split(",") || []
-  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"];
+  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001","https://spillr.vercel.app/"].filter(Boolean);;
 
 
 app.use(
