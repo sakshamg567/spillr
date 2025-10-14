@@ -30,30 +30,33 @@ app.use(
      
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (allowedOrigins.indexOf(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); 
+        console.warn(' CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
       }
     },
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     credentials: true,
     optionsSuccessStatus: 200,
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ['Set-Cookie'],
+    maxAge:86400
   })
 );
 
 
 app.use(
   helmet({
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: false,
-    crossOriginResourcePolicy: false, // DISABLE THIS
-    contentSecurityPolicy: false, // DISABLE CSP FOR NOW
-    frameguard: { action: "deny" },
-    hsts: false 
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

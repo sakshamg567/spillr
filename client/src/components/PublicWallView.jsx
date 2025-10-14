@@ -41,7 +41,7 @@ const PublicWallView = () => {
 
     const fetchAnsweredFeedback = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/public/wall/${slug}/feedbacks`)
+        const response = await fetch(`${API_BASE_URL}/api/feedback/wall/${slug}`)
         if (response.ok) {
           const data = await response.json()
           setAnsweredFeedbacks(data.feedbacks || [])
