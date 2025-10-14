@@ -13,7 +13,9 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { fileTypeFromBuffer } from "file-type";
+import Wall from "../models/Wall.js";
 
+const F_OK = fs.constants.F_OK; 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const uploadDir = path.join(__dirname, "..", "uploads");
@@ -66,7 +68,24 @@ const validatePassword = (password) => {
     /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
   );
 };
+const validateName = (name) => {
+  return (
+    name &&
+    typeof name === "string" &&
+    name.trim().length >= 2 &&
+    name.trim().length <= 50
+  );
+};
 
+const validateUsername = (username) => {
+  return (
+    username &&
+    typeof username === "string" &&
+    username.trim().length >= 3 &&
+    username.trim().length <= 30 &&
+    /^[a-zA-Z0-9_]+$/.test(username)
+  );
+};
 const sanitizeFilename = (filename) => {
   return filename
     .replace(/[^a-zA-Z0-9.-]/g, "_")
@@ -163,18 +182,21 @@ router.patch(
         updates.name = validator.escape(updates.name.trim());
       }
 
-       if (updates.username !== undefined) {
+      if (updates.username !== undefined) {
         const normalizedUsername = updates.username.trim().toLowerCase();
-        
+
         if (!validateUsername(normalizedUsername)) {
           return res
             .status(400)
-            .json({ message: "Username must be 3-30 characters with letters, numbers, and underscores" });
+            .json({
+              message:
+                "Username must be 3-30 characters with letters, numbers, and underscores",
+            });
         }
 
-         const existingUser = await User.findOne({ 
+        const existingUser = await User.findOne({
           username: normalizedUsername,
-          _id: { $ne: req.user.id }
+          _id: { $ne: req.user.id },
         });
 
         if (existingUser) {
@@ -255,6 +277,7 @@ router.patch(
   profileUpdateLimiter,
   upload.single("profilePic"),
   async (req, res) => {
+   
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -311,11 +334,18 @@ router.patch(
           uploadDir,
           path.basename(oldProfilePicture)
         );
+
         try {
-          await access(oldFilePath);
+          await access(oldFilePath, F_OK);
           await unlink(oldFilePath);
+          console.log("Old profile picture deleted successfully");
         } catch (error) {
-          console.error("Failed to delete old profile picture:", error.message);
+          if (error.code !== "ENOENT") {
+            console.error(
+              "Failed to delete old profile picture:",
+              error.message
+            );
+          }
         }
       }
 
@@ -364,7 +394,7 @@ router.patch(
         req.user.id,
         { emailNotifications: updates },
         {
-          new: false,
+          new: true,
           runValidators: true,
           select:
             "-passwordHash -googleId -accountDeletionToken -accountDeletionTokenExpiry",
@@ -400,7 +430,7 @@ router.post(
       if (!validatePassword(newPassword)) {
         return res.status(400).json({
           message:
-            "Password must be 12-128 characters with uppercase, lowercase, number, and special character",
+            "Password must be 8-128 characters with uppercase, lowercase, and number",
         });
       }
 
@@ -485,9 +515,7 @@ router.post(
 
       if (transporter) {
         try {
-          const confirmationUrl = `${
-            process.env.FRONTEND_URL 
-          }/confirm-deletion`;
+          const confirmationUrl = `${process.env.FRONTEND_URL}/confirm-deletion`;
 
           const mailOptions = {
             from: `"Spillr Support" <${process.env.EMAIL_USER}>`,
@@ -572,6 +600,7 @@ router.post("/confirm-account-deletion", async (req, res) => {
     try {
       await Wall.deleteMany({ ownerId: userId });
       
+      const Feedback = mongoose.model('Feedback');
       await Feedback.deleteMany({ userId: userId });
 
       const userWalls = await Wall.find({ ownerId: userId }).select("_id");
@@ -605,7 +634,7 @@ router.post("/confirm-account-deletion", async (req, res) => {
 });
 
 router.get("/confirm-account-deletion", async (req, res) => {
-  const frontendUrl = process.env.FRONTEND_URL ;
+  const frontendUrl = process.env.FRONTEND_URL;
   res.redirect(
     `${frontendUrl}/confirm-deletion?${new URLSearchParams(
       req.query
@@ -613,4 +642,7 @@ router.get("/confirm-account-deletion", async (req, res) => {
   );
 });
 
+
+
 export default router;
+

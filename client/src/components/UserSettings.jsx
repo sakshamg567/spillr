@@ -10,12 +10,13 @@ import {
   Lock,
   Bell,
   Trash2,
-  Images,
+  Upload,
   Save,
   Eye,
   EyeOff,
   CheckCircle,
   AlertTriangle,
+  Images,
 } from "lucide-react";
 
 
@@ -62,6 +63,8 @@ const UserSettings = () => {
   const [notifications, setNotifications] = useState({
     newFeedback: false,
   });
+const [uploadingImage, setUploadingImage] = useState(false);
+
 
 useEffect(() => {
     if (profile) {
@@ -80,7 +83,7 @@ useEffect(() => {
     { id: "profile", label: "Profile", icon: User },
     { id: "security", label: "Security", icon: Lock },
     { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "danger", label: "Danger Zone", icon: AlertTriangle },
+    { id: "danger", label: "Delete Account", icon: AlertTriangle },
   ];
 
 const handleProfileChange = (field) => (e) => {
@@ -90,13 +93,31 @@ const handleProfileChange = (field) => (e) => {
  const handleProfilePictureChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
     const localPreview = URL.createObjectURL(file);
     setPreviewImage(localPreview);
+    setUploadingImage(true);
+
     try {
       await uploadProfilePicture(file);
       await reloadProfile();
+       alert('Profile picture updated successfully!');
     } catch (err) {
       alert(err.message || "Failed to upload picture");
+      setPreviewImage(null);
+    }
+    finally{
+      setUploadingImage(false);
     }
   };
 
@@ -171,7 +192,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
           {/* Sidebar */}
           <div className="lg:w-64">
             <div className="bg-white rounded-lg shadow-sm border p-4 space-y-2">
-              {tabs.map(({ id, label, icon }) => (
+              {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
@@ -181,8 +202,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
-                  <span>{typeof icon === "string" ? icon : null}</span>
-
+                  <Icon className="w-4 h-4" />
                   {label}
                 </button>
               ))}
@@ -204,29 +224,35 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                   <div className="flex items-center gap-6">
                     <div className="relative">
                       <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden">
-                       {displayImage ? (
-  <img src={displayImage} alt="Profile" className="w-full h-full object-cover" />
-) : (
-  <div className="w-full h-full flex items-center justify-center bg-gray-300">
-    <User className="w-8 h-8 text-gray-500" />
-  </div>
-)}
+                        {displayImage ? (
+                          <img src={displayImage} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-300">
+                            <User className="w-8 h-8 text-gray-500" />
+                          </div>
+                        )}
                       </div>
-                      <label className="absolute bottom-0 right-0 bg-white text-black p-2 rounded-full cursor-pointer hover:bg-gray-200">
-                        <Images className="">
+                      <label className="absolute bottom-0 right-0 bg-black text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors">
+                        <Upload className="w-4 h-4" />
                         <input
                           type="file"
                           accept="image/*"
                           onChange={handleProfilePictureChange}
                           className="hidden"
-                        /></Images>
+                          disabled={uploadingImage}
+                        />
                       </label>
+                      {uploadingImage && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <h3 className="font-medium text-gray-900">Profile Photo</h3>
                       <p className="text-sm text-gray-500">JPG, PNG or WebP. Max 5MB.</p>
-                      {previewImage && (
-                        <p className="text-sm text-blue-500 mt-1">Preview ready - save to upload</p>
+                      {uploadingImage && (
+                        <p className="text-sm text-blue-500 mt-1">Uploading...</p>
                       )}
                     </div>
                   </div>
@@ -293,7 +319,17 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                
                   <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
   <h3 className="font-medium text-gray-900">Change Password</h3>
+              {passwordSuccess && (
+                    <div className="text-green-600 px-4 py-3 rounded-lg text-sm bg-green-50">
+                      Password updated successfully!
+                    </div>
+                  )}
 
+                  {passwordErrors.submit && (
+                    <div className="text-red-500 px-4 py-3 rounded-lg text-sm bg-red-50">
+                      {passwordErrors.submit}
+                    </div>
+                  )}
                   {/* Current Password */}
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">Current Password</label>
@@ -404,11 +440,11 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
             )}
 
             {/* Danger Zone Tab */}
-            {activeTab === "danger" && (
+   {activeTab === "danger" && (
               <div className="bg-white rounded-lg shadow-sm border border-red-200">
                 <div className="p-6 border-b border-red-200 bg-red-50">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">⚠️</span>
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
                     <h2 className="text-xl font-semibold text-red-900">Danger Zone</h2>
                   </div>
                   <p className="text-red-700 mt-1">Irreversible actions</p>
@@ -426,8 +462,9 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                     </ul>
                     <button
                       onClick={() => setShowDeleteModal(true)}
-                      className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700"
+                      className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 flex items-center gap-2"
                     >
+                      <Trash2 className="w-4 h-4" />
                       Delete My Account
                     </button>
                   </div>
@@ -439,11 +476,11 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
       </div>
 
       {/* Delete Modal */}
-      {showDeleteModal && (
+{showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">⚠️</span>
+              <AlertTriangle className="w-6 h-6 text-red-600" />
               <h3 className="text-xl font-bold text-gray-900">Delete Account</h3>
             </div>
 
@@ -492,10 +529,10 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
               </button>
               <button
                 onClick={handleDeleteAccount}
-                disabled={!deletePassword || deleteConfirmText !== "DELETE"}
+                disabled={!deletePassword || deleteConfirmText !== "DELETE" || deletionLoading}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400"
               >
-                Delete Account
+                {deletionLoading ? "Deleting..." : "Delete Account"}
               </button>
             </div>
           </div>

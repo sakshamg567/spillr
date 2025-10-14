@@ -6,7 +6,7 @@ import "./App.css";
 import Loading from "./components/Loading";
 import Settings from "./components/UserSettings";
 import PublicWallView from "./components/PublicWallView";
-
+import ResetPasswordForm from './components/auth/ResetPasswordForm'
 const Home = lazy(() => import("./pages/Home"));
 const Dashboard = lazy(() => import("./components/Dashboard"));
 
@@ -18,7 +18,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         
           <Route path="/public/wall/:slug" element={<PublicWallView />} />
-    
+           <Route path="/reset-password" element={<ResetPasswordForm />} />
         <Route element={<AuthRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />

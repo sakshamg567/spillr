@@ -2,8 +2,9 @@ import express from "express";
 import Feedback from "../models/Feedback.js";
 import Wall from "../models/Wall.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-
+import transporter from "../config/email.js";
 import validator from "validator";
+
 import mongoose from "mongoose";
 import rateLimit from "express-rate-limit";
 
@@ -58,8 +59,6 @@ router.get("/", (req, res) => {
   });
 });
 
-// Submit feedback (public)
-
 router.post("/", feedbackLimiter, async (req, res) => {
   try {
     const { question: rawQuestion, wallSlug: rawSlug } = req.body;
@@ -95,13 +94,10 @@ router.post("/", feedbackLimiter, async (req, res) => {
         (id) => id.toString() === req.user.id
       );
       if (isBlocked) {
-        return res
-          .status(403)
-          .json({
-            message: "You are blocked from submitting feedback to this wall",
-          });
+        return res.status(403).json({
+          message: "You are blocked from submitting feedback to this wall",
+        });
       }
-    
     }
 
     const feedback = new Feedback({
@@ -112,8 +108,67 @@ router.post("/", feedbackLimiter, async (req, res) => {
     });
 
     await feedback.save();
+
+    // CRITICAL: Send response IMMEDIATELY - do NOT wait for email
     res.status(201).json(feedback);
+
+    // Send email notification asynchronously (fire and forget)
+    const owner = wall.ownerId;
+    
+    console.log("🔍 Debug - Email notification check:");
+    console.log("  Owner exists:", !!owner);
+    console.log("  Owner email:", owner?.email);
+    console.log("  Email notifications enabled:", owner?.emailNotifications?.newFeedback);
+    console.log("  Transporter ready:", !!transporter);
+    
+    if (owner?.emailNotifications?.newFeedback && transporter) {
+      console.log("✉️  Preparing to send email notification...");
+      
+      const mailOptions = {
+        from: process.env.EMAIL_USER, // Simple format - no display name for Brevo
+        to: owner.email,
+        subject: "New message on your Spillr wall",
+        headers: {
+          'X-Mailer': 'Spillr',
+        },
+        text: `Hi ${owner.name || "there"},\n\nYou just received a new message:\n\n"${question}"\n\nView your feedback: ${process.env.FRONTEND_URL}/dashboard\n\nYou can disable these notifications in your account settings.`,
+        html: `
+          <p>Hi ${validator.escape(owner.name || "there")},</p>
+          <p>You just received a new message:</p>
+          <blockquote>${validator.escape(question)}</blockquote>
+          <p><a href="${process.env.FRONTEND_URL}/public/wall/${owner.username}">View your feedback here</a></p>
+          <hr />
+          <p><small>You can disable these notifications in your account settings.</small></p>
+        `,
+      };
+
+      // Fire and forget - don't block, don't fail the request
+      transporter.sendMail(mailOptions)
+        .then((info) => {
+          console.log(`✅ Feedback email sent successfully!`);
+          console.log(`📧 Message ID: ${info.messageId}`);
+          console.log(`📊 Server Response: ${info.response}`);
+          console.log(`📬 From: ${process.env.EMAIL_USER}`);
+          console.log(`📭 To: ${owner.email}`);
+          console.log(`⏰ Sent at: ${new Date().toISOString()}`);
+          console.log(`🔍 Check Brevo logs: https://app.brevo.com/`);
+        })
+        .catch((err) => {
+          console.error("❌ Failed to send feedback email!");
+          console.error("Error message:", err.message);
+          console.error("Error code:", err.code);
+          console.error("Full error:", err);
+        });
+    } else {
+      console.log("⚠️  Email notification NOT sent because:");
+      if (!owner) console.log("  - Owner not found");
+      if (!owner?.email) console.log("  - Owner has no email address");
+      if (!owner?.emailNotifications?.newFeedback) console.log("  - Email notifications disabled for owner");
+      if (!transporter) console.log("  - Transporter not configured");
+    }
+
   } catch (err) {
+    console.error("Feedback submission error:", err.message);
     res.status(500).json({ message: "Unable to submit feedback" });
   }
 });
