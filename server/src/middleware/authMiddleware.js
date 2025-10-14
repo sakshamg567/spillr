@@ -27,29 +27,50 @@ const getCookieConfig = () => {
 
 const authMiddleware = async (req, res, next) => {
   try {
+    console.log('Cookies received:', req.cookies);
+    console.log('Headers:', { 
+      cookie: req.headers.cookie,
+      authorization: req.headers.authorization 
+    });
+
     const token = req.cookies?.token;
     if (!token) {
-      return res.status(401).json({ message: "Not authenticated" });
+    console.log('No token in cookies, checking Authorization header');
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+      
+      } else {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
     }
 
-   
-    const JWT_SECRET = getJWTSecret();
+     const JWT_SECRET = getJWTSecret();
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findById(decoded.id);
 
     if (!user || !user.isActive) {
-      res.clearCookie("token", getCookieConfig());
+      res.clearCookie("token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      });
       return res.status(401).json({ message: "Invalid user" });
     }
 
     req.user = user;
-
     next();
   } catch (error) {
     console.error("Token verification error:", error.message);
-    res.clearCookie("token", getCookieConfig());
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
     return res.status(401).json({ message: "Invalid token" });
   }
 };
 
-export default authMiddleware;
+export default authMiddleware

@@ -33,16 +33,29 @@ const isFormData = options.body instanceof FormData;
 
   const config = {
 ...options,
+method: options.method || 'GET',
 headers: {
 ...getAuthHeaders(isFormData),
 ...(options.headers || {})
 },
 credentials: 'include'
 };
+
+  console.log('API Request:', { 
+    url, 
+    method: config.method,
+    hasCredentials: config.credentials 
+  });
+
    try {
     const response = await fetch(url, config);
     
-    
+    console.log('API Response:', { 
+      url, 
+      status: response.status,
+      statusText: response.statusText 
+    });
+
     let data;
     const contentType = response.headers.get('content-type');
     

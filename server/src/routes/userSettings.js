@@ -205,11 +205,6 @@ router.patch(
 
         updates.username = normalizedUsername;
 
-        const wall = await Wall.findOne({ ownerId: req.user.id });
-        if (wall) {
-          wall.username = normalizedUsername;
-          await wall.save();
-        }
       }
 
       if (updates.bio !== undefined) {

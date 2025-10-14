@@ -27,11 +27,19 @@ const setTokenCookie = (res, token) => {
   res.cookie("token", token, {
     httpOnly: true,
     secure: isProduction, 
-    sameSite: isProduction ? "none" : "lax", // "none" for cross-origin
+    sameSite: isProduction ? "lax" : "lax", // "none" for cross-origin
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, 
   });
+
+console.log('Setting cookie with config:', { 
+    ...cookieConfig, 
+    token: token ? 'SET' : 'MISSING' 
+  });
+
+    res.cookie("token", token, cookieConfig);
 };
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,

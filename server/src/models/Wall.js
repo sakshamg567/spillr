@@ -16,6 +16,7 @@ const wallSchema = new mongoose.Schema(
       type: String,
       unique: true,
       required: true,
+      immutable:true,
     },
     customColors: {
       primary: {
