@@ -23,22 +23,24 @@ const getJWTSecret = () => {
 };
 const setTokenCookie = (res, token) => {
   const isProduction = process.env.NODE_ENV === "production";
-  
-  res.cookie("token", token, {
+
+  const cookieConfig = {
     httpOnly: true,
-    secure: isProduction, 
-    sameSite: isProduction ? "lax" : "lax", // "none" for cross-origin
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax", // "none" for cross-origin
     path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000, 
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  };
+
+  console.log("Setting cookie with config:", {
+    ...cookieConfig,
+    token: token ? "SET" : "MISSING",
   });
 
-console.log('Setting cookie with config:', { 
-    ...cookieConfig, 
-    token: token ? 'SET' : 'MISSING' 
-  });
-
-    res.cookie("token", token, cookieConfig);
+  
+  res.cookie("token", token, cookieConfig);
 };
+
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
