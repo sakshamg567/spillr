@@ -20,11 +20,11 @@
 .delay-200 {
   animation-delay: 0.2s;
 }
-
 .poster-text {
-  font-family: "Times New Roman", serif;
-  font-weight: 900;
-  line-height: 0.85;
-  letter-spacing: -0.02em;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+
 }
+
 

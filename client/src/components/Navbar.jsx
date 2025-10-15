@@ -33,16 +33,19 @@ export default function GlassNavbar() {
   }, [activeItem]);
 
   return (
-    <nav className="relative flex items-center justify-center p-1 bg-white/20 backdrop-blur-md border border-white/10 shadow-lg rounded-full">
+    <nav className="relative flex items-center justify-center p-2 bg-white border border-black shadow-[6px_6px_0_0_#000]">
+
       <div className="relative flex items-center gap-2">
         {/* Active pill indicator */}
-        <div
-          className="absolute h-8 bg-white/20 rounded-full transition-all duration-500 ease-out shadow-sm"
-          style={{
-            width: indicatorStyle.width,
-            left: indicatorStyle.left,
-          }}
-        />
+    <div
+  className="absolute bottom-0 h-[4px] bg-black transition-all duration-700 ease-out"
+  style={{
+    width: indicatorStyle.width,
+    left: indicatorStyle.left,
+  }}
+/>
+
+
 
         {/* Nav items */}
         {items.map((item) => (
@@ -59,7 +62,7 @@ export default function GlassNavbar() {
               activeItem === item.label
                 ? "text-gray-600"
                 : "text-black hover:text-gray-600"
-            }`}
+            }`}style={{ fontFamily: "Space Grotesk" }}
           >
             {item.label}
           </button>
