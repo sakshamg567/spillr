@@ -113,7 +113,7 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/settings", userSettings);
 
 
-app.use("/api/*", (req, res) => {
+app.use("/api/", (req, res) => {
   res.status(404).json({ message: "API route not found" });
 });
 
