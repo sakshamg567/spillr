@@ -3,93 +3,186 @@ import Modal from "./Modal";
 
 const Footer = () => {
   const [modalContent, setModalContent] = useState(null);
+  
+const privacyPolicy = () => {
+  return (
+    <div className="min-h-screen bg-yellow-200 flex items-center justify-center p-6">
+      <div className="max-w-4xl w-full border-4 border-black bg-yellow-200 shadow-[12px_12px_0_0_#000] p-10 space-y-10 font-mono text-black">
+        <h1 className="text-5xl font-extrabold uppercase tracking-tight border-b-4 border-black pb-4">
+          Privacy Policy
+        </h1>
 
-  const privacyPolicy = (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Privacy Policy</h1>  
-    <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">Definitions</h2>
-        <p>The feedback or opinion that a user gives to other users on our platform.</p>
+        <section className="space-y-8 text-base leading-relaxed">
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Definitions
+            </h2>
+            <p>The feedback or opinion that a user gives to other users on our platform.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Information You Share</h2>
-        <p>Some services require registration and provide certain personal data.</p>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Information You Share
+            </h2>
+            <p>Some services require registration and provide certain personal data.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Information We Collect</h2>
-        <p>IP Address, Cookies, Timestamps, and analytics data.</p>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Information We Collect
+            </h2>
+            <p>IP Address, Cookies, Timestamps, and analytics data.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Third-Party Services</h2>
-        <p>Email providers, analytics and push notifications.</p>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Third-Party Services
+            </h2>
+            <p>Email providers, analytics and push notifications.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Opting Out</h2>
-        <p>You can adjust your browser to block cookies, but some features may not work.</p>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Opting Out
+            </h2>
+            <p>You can adjust your browser to block cookies, but some features may not work.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Policy Changes</h2>
-        <p>We may update this policy at any time without prior notice.</p>
-      </section>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Policy Changes
+            </h2>
+            <p>We may update this policy at any time without prior notice.</p>
+          </div>
+        </section>
 
-      <section>
-        <h2 className="text-2xl font-semibold">Contact Us</h2>
-        <p>
-          Email:{" "}
-          <a href="mailto:spillr.app.email@gmail.com" className="underline text-blue-500">
-            spillr.app.email@gmail.com
-          </a>
-        </p>
-      </section>
+        <section className="pt-6 border-t-4 border-black">
+          <h2 className="text-2xl font-bold uppercase mb-2">Contact Us</h2>
+          <p>
+            Email:{" "}
+            <a
+              href="mailto:spillr.app.email@gmail.com"
+              className="underline underline-offset-4 text-black hover:bg-black hover:text-yellow-200 transition-all"
+            >
+              spillr.app.email@gmail.com
+            </a>
+          </p>
+        </section>
+      </div>
     </div>
   );
+};
 
-  const termsAndConditions = (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Terms and Conditions</h1>
-      <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">Introduction</h2>
-        <p>Welcome to Spillr. Please read these Terms and Conditions carefully before use.</p>
 
-        <h2 className="text-2xl font-semibold">User Responsibilities</h2>
-        <p>Maintain confidentiality, provide truthful information, and use the platform ethically.</p>
 
-        <h2 className="text-2xl font-semibold">Acceptable Use</h2>
-        <p>You must not violate laws, harass others, or post harmful content.</p>
+  const termsAndConditions = () => {
+  return (
+    <div className="min-h-screen bg-yellow-200 flex items-center justify-center p-6">
+      <div className="max-w-4xl w-full border-4 border-black bg-yellow-200 shadow-[12px_12px_0_0_#000] p-10 space-y-10 font-mono text-black">
+        <h1 className="text-5xl font-extrabold uppercase tracking-tight border-b-4 border-black pb-4">
+          Terms & Conditions
+        </h1>
 
-        <h2 className="text-2xl font-semibold">Content Guidelines</h2>
-        <p>No pornographic, violent, discriminatory, or infringing content.</p>
+        <section className="space-y-8 text-base leading-relaxed">
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Introduction
+            </h2>
+            <p>Welcome to Spillr. Please read these Terms and Conditions carefully before use.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Intellectual Property Rights</h2>
-        <p>All content belongs to Spillr or licensors. No unauthorized reproduction.</p>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              User Responsibilities
+            </h2>
+            <p>Maintain confidentiality, provide truthful information, and use the platform ethically.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Disclaimers & Limitation of Liability</h2>
-        <p>The service is provided "as is" without warranties. We are not liable for indirect damages.</p>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Acceptable Use
+            </h2>
+            <p>You must not violate laws, harass others, or post harmful content.</p>
+          </div>
 
-        <h2 className="text-2xl font-semibold">Termination</h2>
-        <p>We may terminate access without notice for breach of terms.</p>
-      </section>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Content Guidelines
+            </h2>
+            <p>No pornographic, violent, discriminatory, or infringing content.</p>
+          </div>
 
-      <section>
-        <h2 className="text-2xl font-semibold">Contact Us</h2>
-        <p>
-          Email:{" "}
-          <a href="mailto:spillr.app.email@gmail.com" className="underline text-blue-500">
-            spillr.app.email@gmail.com
-          </a>
-        </p>
-      </section>
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Intellectual Property Rights
+            </h2>
+            <p>All content belongs to Spillr or licensors. No unauthorized reproduction.</p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Disclaimers & Limitation of Liability
+            </h2>
+            <p>
+              The service is provided "as is" without warranties. We are not liable for indirect damages.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
+              Termination
+            </h2>
+            <p>We may terminate access without notice for breach of terms.</p>
+          </div>
+        </section>
+
+        <section className="pt-6 border-t-4 border-black">
+          <h2 className="text-2xl font-bold uppercase mb-2">Contact Us</h2>
+          <p>
+            Email:{" "}
+            <a
+              href="mailto:spillr.app.email@gmail.com"
+              className="underline underline-offset-4 text-black hover:bg-black hover:text-yellow-200 transition-all"
+            >
+              spillr.app.email@gmail.com
+            </a>
+          </p>
+        </section>
+      </div>
     </div>
   );
+};
 
-  const contactUs = (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Contact Us</h1>
-      <p className="text-sm text-gray-500">We’d love to hear from you!</p>
-      <p>
+
+
+
+
+const contactUs = (
+  <div className="max-w-3xl mx-auto p-8 border-2 border-black bg-yellow-200 shadow-[6px_6px_0_0_#000] space-y-6 font-mono text-black "style={{ fontFamily: "Space Grotesk" }}>
+    <h1 className="text-4xl font-extrabold uppercase tracking-tight border-b-2 border-black pb-2">
+      Contact Us
+    </h1>
+
+    <p className="text-sm uppercase text-gray-700">We’d love to hear from you</p>
+
+    <div className="space-y-2">
+      <p className="text-lg">
         Email:{" "}
-        <a href="mailto:spillr.app.email@gmail.com" className="underline text-blue-500">
+        <a
+          href="mailto:spillr.app.email@gmail.com"
+          className="underline underline-offset-4 text-black hover:bg-black hover:text-blue-100 transition-all"
+        >
           spillr.app.email@gmail.com
         </a>
       </p>
-      <p>For questions, concerns, or feedback, feel free to contact us at any time.</p>
+
+      <p className="text-base border-t-2 border-black pt-3">
+        For questions, concerns, or feedback — reach out anytime.
+      </p>
     </div>
-  );
+  </div>
+);
+
 
   return (
 

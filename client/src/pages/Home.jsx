@@ -149,7 +149,7 @@ if (loading) return <LoadingCard />
           >
             {!hideTitle && (
               <motion.h2
-                className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide pl-2 pt-2 transition-opacity duration-500"
+                className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide  pt-2 transition-opacity duration-500"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
@@ -316,7 +316,7 @@ if (loading) return <LoadingCard />
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
                 whileHover={{ y: -6 }} style={{ fontFamily: "Space Grotesk" }}
-                className="flex flex-col bg-card/80 p-6  shadow-card border border-black shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg bg-white"
+                className="flex flex-col bg-card/80 p-6  shadow-card shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg bg-white"
               >
                 <motion.div
                   className="gradient-primary p-3 rounded-xl w-fit mb-4"
@@ -437,7 +437,7 @@ if (loading) return <LoadingCard />
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
                 whileHover={{ y: -6 }}
-              className="flex flex-col bg-white border-2 border-black p-6 shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg " style={{ fontFamily: "Space Grotesk" }}
+              className="flex flex-col bg-white  p-6 shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg " style={{ fontFamily: "Space Grotesk" }}
 
               >
                 
@@ -459,7 +459,7 @@ if (loading) return <LoadingCard />
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
                 whileHover={{ y: -6 }}
-                className="flex flex-col bg-white border-2 border-black p-6 shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg" style={{ fontFamily: "Space Grotesk" }}
+                className="flex flex-col bg-white  p-6 shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg" style={{ fontFamily: "Space Grotesk" }}
 
               >
       <div className="text-center group">
@@ -480,7 +480,7 @@ if (loading) return <LoadingCard />
                 viewport={{ once: true, margin: "-80px" }}
                 transition={{ duration: 0.35, ease: "easeOut", delay: 0.1 }}
                 whileHover={{ y: -6 }}
-                className="flex flex-col bg-white border-2 border-black p-6 shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg" style={{ fontFamily: "Space Grotesk" }}
+                className="flex flex-col bg-white  p-6 shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg" style={{ fontFamily: "Space Grotesk" }}
 
               >
  
