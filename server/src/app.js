@@ -21,43 +21,49 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 
-const allowedOrigins = process.env.NODE_ENV === "production"
-  ? (process.env.FRONTEND_URL?.split(",") || []).filter(Boolean)
-  : ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"];
+const allowedOrigins = [
+  "https://spillr.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000"
+];
 
-if (process.env.NODE_ENV === "production") {
-  allowedOrigins.push("https://spillr.vercel.app/");
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
 }
+
+console.log('✅ Allowed CORS origins:', allowedOrigins);
 
 app.use(
   cors({
     origin: function(origin, callback) {
-     
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.indexOf(origin)) {
+      if (allowedOrigins.includes(origin)) {
+        console.log('CORS allowed for:', origin);
         callback(null, true);
       } else {
-        console.warn(' CORS blocked origin:', origin);
-        callback(null, true);
-      //callback(new Error('Not allowed by CORS'));
+        console.warn('CORS blocked for:', origin);
+        callback(new Error('Not allowed by CORS'));
       }
     },
+    credentials: true, 
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
-    credentials: true,
-    optionsSuccessStatus: 200,
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposedHeaders: ['Set-Cookie'],
-    maxAge:86400
+    optionsSuccessStatus: 200,
   })
 );
 
+
+app.options('*', cors());
 
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
+
+app.use(cookieParser());
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -75,7 +81,7 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 app.use(express.json({ limit: "1mb" }));
-app.use(cookieParser());
+
 
 
 const uploadsPath = path.join(__dirname, "uploads");

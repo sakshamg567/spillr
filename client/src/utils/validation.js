@@ -30,7 +30,7 @@ export const validatePassword = (password, options = {}) => {
   }
   
   const {
-    minLength = 8,
+    minLength = 6,
     maxLength = 128,
     requireConfirm = false,
     confirmPassword = '',

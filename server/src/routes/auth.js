@@ -68,7 +68,7 @@ const validatePassword = (password) => {
   return (
     password &&
     typeof password === "string" &&
-    password.length >= 8 &&
+    password.length >= 6 &&
     password.length <= 128 &&
     /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)
   );
@@ -427,15 +427,38 @@ router.get("/verify-reset-token/:token", async (req, res) => {
 
 // Logout user
 router.post("/logout", (req, res) => {
+  
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
   });
 
   console.log("User logged out");
   res.status(200).json({ message: "Logged out successfully" });
+});
+
+router.get("/debug-auth", authMiddleware, (req, res) => {
+  res.json({
+    authenticated: true,
+    user: {
+      id: req.user._id,
+      email: req.user.email,
+      username: req.user.username
+    },
+    cookies: Object.keys(req.cookies || {}),
+    hasCookie: !!req.cookies?.token
+  });
+});
+
+router.get("/debug-cors", (req, res) => {
+  res.json({
+    origin: req.headers.origin,
+    cookies: req.headers.cookie,
+    allowedOrigins: process.env.FRONTEND_URL,
+    nodeEnv: process.env.NODE_ENV
+  });
 });
 
 export default router;
