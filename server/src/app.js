@@ -15,10 +15,12 @@ import cookieParser from 'cookie-parser';
 import WallRoute from './routes/wallRoutes.js'
 import compression from 'compression';
 const app = express();
-app.use(compression());
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+app.use(compression());
 
 
 const allowedOrigins = [
@@ -31,7 +33,7 @@ if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
-console.log('✅ Allowed CORS origins:', allowedOrigins);
+console.log(' Allowed CORS origins:', allowedOrigins);
 
 app.use(
   cors({
@@ -54,21 +56,16 @@ app.use(
   })
 );
 
-
-app.options('*', cors());
-
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    contentSecurityPolicy: false,
+    frameguard: { action: "deny" },
+    hsts: false 
   })
 );
-
-app.use(cookieParser());
-
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -78,10 +75,10 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
   skip: (req) => req.url.startsWith("/uploads/"),
 });
+
 app.use(globalLimiter);
-
 app.use(express.json({ limit: "1mb" }));
-
+app.use(cookieParser());
 
 
 const uploadsPath = path.join(__dirname, "uploads");
@@ -101,11 +98,6 @@ app.use("/uploads", (req, res, next) => {
   next();
 });
 
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-
 app.use("/uploads", express.static(uploadsPath, {
   maxAge: "1d",
   setHeaders: (res, filePath) => {
@@ -121,10 +113,12 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/settings", userSettings);
 
 
-app.use((req, res, next) => {
-  if (!res.headersSent) {
-    res.status(404).json({ message: "Route not found" });
-  }
+app.use("/api/*", (req, res) => {
+  res.status(404).json({ message: "API route not found" });
+});
+
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
 });
 
 
