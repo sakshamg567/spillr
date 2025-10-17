@@ -1,9 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { feedbackService } from "../services/feedbackService.js";
 
-// -------------------------------------------------------------
-// 1️⃣ SUBMIT FEEDBACK (public users)
-// -------------------------------------------------------------
+
 export const useFeedbackSubmission = (wallSlug) => {
   const [formData, setFormData] = useState({ question: "" });
   const [errors, setErrors] = useState({});
@@ -65,9 +63,7 @@ export const useFeedbackSubmission = (wallSlug) => {
   };
 };
 
-// -------------------------------------------------------------
-// 2️⃣ PUBLIC FEEDBACK (view + reactions)
-// -------------------------------------------------------------
+
 export const usePublicFeedback = (wallSlug) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -111,9 +107,6 @@ export const usePublicFeedback = (wallSlug) => {
   };
 };
 
-// -------------------------------------------------------------
-// 3️⃣ OWNER FEEDBACK (dashboard + management)
-// -------------------------------------------------------------
 export const useOwnerFeedback = (slug) => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [pagination, setPagination] = useState({
@@ -174,9 +167,11 @@ export const useOwnerFeedback = (slug) => {
     }));
   }, []);
 
-  const changePage = useCallback((page) => {
-    setFilters((prev) => ({ ...prev, page }));
-  }, []);
+const changePage = (newPage) => {
+  setFilters(prev => ({ ...prev, page: newPage }));
+  
+};
+
 
   const answerFeedback = useCallback(async (feedbackId, answer) => {
     try {
@@ -221,9 +216,7 @@ export const useOwnerFeedback = (slug) => {
   };
 };
 
-// -------------------------------------------------------------
-// 4️⃣ FEEDBACK ANSWER (modal / reply editor)
-// -------------------------------------------------------------
+
 export const useFeedbackAnswer = () => {
   const [formData, setFormData] = useState({ answer: "" });
   const [errors, setErrors] = useState({});

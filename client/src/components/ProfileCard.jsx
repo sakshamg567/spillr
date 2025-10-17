@@ -8,27 +8,21 @@ const ProfileCard = () => {
   const { user } = useAuth();
 
   const userName = profile?.name || user?.name || "User";
-   
+
   const sharedLink = useMemo(() => {
     const username = profile?.username || user?.username;
-    if (username) {
-      return `${window.location.origin}/public/wall/${username}`;
-    }
-    return window.location.origin;
+    return username
+      ? `${window.location.origin}/public/wall/${username}`
+      : window.location.origin;
   }, [profile?.username, user?.username]);
 
-
-  // Memoize avatar URL calculation to prevent unnecessary recalculations
   const avatarUrl = useMemo(() => {
-    if (profile?.avatarUrl) {
-      return profile.avatarUrl;
-    } else if (profile?.profilePicture) {
+    if (profile?.avatarUrl) return profile.avatarUrl;
+    if (profile?.profilePicture)
       return profile.profilePicture.startsWith("http")
         ? profile.profilePicture
         : `${import.meta.env.VITE_API_BASE_URL}${profile.profilePicture}`;
-    } else {
-      return user?.avatarUrl || null;
-    }
+    return user?.avatarUrl || null;
   }, [profile?.avatarUrl, profile?.profilePicture, user?.avatarUrl]);
 
   const isVerified = profile?.isVerified || false;
@@ -42,14 +36,8 @@ const ProfileCard = () => {
     setTempBio(userBio);
   }, [userBio]);
 
-  const hasBio = !!tempBio;
-
   const handleSaveBio = useCallback(async () => {
-    if (tempBio === userBio) {
-      setIsEditing(false);
-      return;
-    }
-
+    if (tempBio === userBio) return setIsEditing(false);
     const result = await updateProfile({ bio: tempBio });
     if (result) setIsEditing(false);
   }, [tempBio, userBio, updateProfile]);
@@ -67,98 +55,80 @@ const ProfileCard = () => {
   if (loading && !profile) {
     return (
       <div className="flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white shadow-xl rounded-xl p-6 flex flex-col items-center space-y-4 animate-pulse">
-          <div className="h-20 w-20 rounded-full bg-gray-200"></div>
-          <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+        <div className="w-full max-w-sm bg-white border border-black shadow-[3px_3px_0_#000] rounded-xl p-6 animate-pulse">
+          <div className="h-40 w-full bg-gray-200 rounded mb-4"></div>
+          <div className="h-6 w-3/4 bg-gray-200 rounded mb-2"></div>
           <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
-          <div className="h-12 w-full bg-gray-200 rounded-lg"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white shadow-xl rounded-xl p-6 flex flex-col items-center space-y-4">
-        {/* Avatar */}
-        <div className="h-20 w-20 rounded-full bg-purple-200 flex items-center justify-center border-4 border-white shadow-md text-purple-600 overflow-hidden">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={`${userName}'s avatar`}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="text-3xl font-bold">
-              {userName[0]?.toUpperCase()}
-            </span>
-          )}
-        </div>
-          
-        {/* Name & Verified Badge */}
-        <div className="flex items-center space-x-2">
-          <h3 className="text-2xl text-gray-800 font-bold">{userName}</h3>
+    <div className="w-70 border bg-card text-card-foreground shadow-elegant border-1 shadow-card  shadow-[4px_4px_0_0_#000] ">
+      {/* Avatar */}
+      <div className="w-full h-48 bg-purple-100 flex items-center justify-center">
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={`${userName}'s avatar`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-3xl font-bold text-purple-600">
+            {userName[0]?.toUpperCase()}
+          </span>
+        )}
+      </div>
+
+      {/* Card Body */}
+      <div className="p-4 space-y-3">
+        {/* Name Row */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-lg text-gray-900 truncate">
+            {userName}
+          </h3>
           {isVerified && <FaCheckCircle className="h-5 w-5 text-blue-500" />}
         </div>
 
-        {/* Bio Section */}
-        <div className="w-full p-4 rounded-lg border border-gray-200 bg-gray-50">
-          <div className="flex items-start justify-between">
-            {isEditing ? (
-              <textarea
-                className="w-full bg-white p-2 border rounded resize-none text-sm text-gray-700 focus:ring-blue-500 focus:border-blue-500"
-                value={tempBio}
-                onChange={(e) => setTempBio(e.target.value)}
-                rows={3}
-                placeholder="Type your bio here..."
-                disabled={isOperationPending}
-              />
-            ) : (
-              <p
-                className={`text-sm ${
-                  hasBio ? "text-gray-700" : "text-red-700 italic"
-                }`}
-              >
-                {hasBio
-                  ? tempBio
-                  : "Your profile bio is missing. Click the edit icon to add one!"}
-              </p>
-            )}
-            <button
-              onClick={() => (isEditing ? handleSaveBio() : setIsEditing(true))}
-              className="ml-2 text-gray-500 hover:text-gray-700 focus:outline-none flex-shrink-0"
-              aria-label={isEditing ? "Save bio" : "Edit bio"}
-              disabled={isOperationPending}
-            >
-              {isEditing ? (
-                <svg
-                  className={`h-4 w-4 ${
-                    isOperationPending
-                      ? "animate-spin text-blue-400"
-                      : "text-green-500"
-                  }`}
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" />
-                </svg>
-              ) : (
-                <FaEdit className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-        </div>
+        {/* Bio */}
+        {isEditing ? (
+          <textarea
+            className="w-full p-2 border border-gray-300 rounded text-sm resize-none focus:ring-0 focus:border-black"
+            rows={2}
+            value={tempBio}
+            onChange={(e) => setTempBio(e.target.value)}
+            disabled={isOperationPending}
+          />
+        ) : (
+          <p
+            className={`text-sm ${
+              tempBio ? "text-gray-700" : "text-gray-400 italic"
+            }`}
+          >
+            {tempBio || "No bio yet. Click edit to add one."}
+          </p>
+        )}
 
-        {/* Share Link */}
-        <button
-          onClick={handleShareLink}
-          className="w-full text-center py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-lg flex items-center justify-center space-x-2 hover:bg-gray-200 transition duration-200 shadow-sm"
-        >
-          <FaShareAlt className="h-4 w-4" />
-          <span className="truncate">
-            {copySuccess ? "Link copied!" : sharedLink}
-          </span>
-        </button>
+        {/* Footer Actions */}
+        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+          <button
+            onClick={() => (isEditing ? handleSaveBio() : setIsEditing(true))}
+            className="flex items-center gap-1 text-sm font-semibold text-gray-800 hover:text-black transition"
+            disabled={isOperationPending}
+          >
+            <FaEdit className="h-4 w-4" />
+            {isEditing ? "Save" : "Edit"}
+          </button>
+
+          <button
+            onClick={handleShareLink}
+            className="flex items-center gap-1 text-sm text-gray-700 hover:text-black transition"
+          >
+            <FaShareAlt className="h-4 w-4" />
+            {copySuccess ? "Copied!" : "Share"}
+          </button>
+        </div>
       </div>
     </div>
   );

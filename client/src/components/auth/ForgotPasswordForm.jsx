@@ -53,7 +53,7 @@ const ForgotPasswordForm = ({ onCancel }) => {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="rounded-lg border bg-card text-card-foreground shadow-elegant border-0">
+      <div className="border bg-card text-card-foreground shadow-elegant border-1 shadow-card  shadow-[4px_4px_0_0_#000] ">
         <div className="flex flex-col text-center p-6 space-y-2 pb-8">
           <div className="mx-auto w-12 h-12 bg-secondary rounded-2xl flex items-center justify-center">
             <Mail className="h-6 w-6 text-foreground" />
@@ -84,16 +84,16 @@ const ForgotPasswordForm = ({ onCancel }) => {
                 placeholder="Email"
                 value={email}
                 onChange={handleChange}
-                className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                required
+          className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  required style={{ fontFamily: "Space Grotesk" }}
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-black hover:bg-gray-800 disabled:bg-gray-600 text-white font-medium rounded-md transition-colors"
-            >
+              className="w-full h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"style={{ fontFamily: "Space Grotesk" }}
+              >
               {loading ? "Sending..." : "Send Reset Link"}
             </button>
           </form>
@@ -101,7 +101,7 @@ const ForgotPasswordForm = ({ onCancel }) => {
           <button
             type="button"
             onClick={onCancel}
-            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors mt-4"
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors mt-4 underline"
           >
             ← Back to Login
           </button>

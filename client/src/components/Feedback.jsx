@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useOwnerFeedback, useFeedbackAnswer } from "../hooks/useFeedback";
 import toast from "react-hot-toast";
@@ -7,13 +7,16 @@ import {
   Reply,
   CheckCircle,
   Clock,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import ProfileCard from "./ProfileCard";
 
-const FeedbackManagement = () => {
+export default function FeedbackManagement() {
   const { user } = useAuth();
-const feedbackIdentifier = user?.username || user?.slug;
+  const feedbackIdentifier = user?.username || user?.slug;
 
-    const {
+  const {
     feedbacks,
     pagination,
     filters,
@@ -23,7 +26,6 @@ const feedbackIdentifier = user?.username || user?.slug;
     updateFilters,
     changePage,
   } = useOwnerFeedback(feedbackIdentifier);
-
 
   const {
     formData: answerFormData,
@@ -43,258 +45,307 @@ const feedbackIdentifier = user?.username || user?.slug;
         resetAnswerForm();
         toast.success("Response posted successfully! ✅");
       });
-    } catch (error) {
-      console.error("Answer submission error:", error);
+    } catch (err) {
+      console.error("Answer submission error:", err);
       toast.error("Failed to post response");
     }
   };
 
- 
   const getStatusBadge = (feedback) => {
     if (feedback.isAnswered)
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-white border border-black text-black">
           <CheckCircle className="w-3 h-3" />
           Answered
         </span>
       );
 
-      // inside useOwnerFeedback
-const fetchFeedback = async (overrides = {}) => {
-  try {
-    setLoading(true);
-    const qs = new URLSearchParams({
-      sort: filters.sort || 'active',
-      page: String(filters.page || 1),
-      limit: String(filters.limit || 10),
-      ...(overrides || {}),
-    }).toString();
-
-    const res = await fetch(`${API_BASE_URL}/api/feedback/owner/${slug}?${qs}`, {
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || 'Failed to fetch feedback');
-    }
-
-    const body = await res.json();
-
-    
-    setFeedbacks(body.feedbacks || []);
-    setPagination(body.pagination || {});
-    setStats(body.stats || { total: 0, answered: 0, archived: 0, active: 0, answerRate: 0 });
-
-  } catch (err) {
-    setError(err.message || 'Unable to fetch feedback');
-  } finally {
-    setLoading(false);
-  }
-};
-
-const updateFilters = (partial) => {
-  setFilters(prev => {
-    const next = { ...prev, ...partial };
-    return next;
-  });
-  
-  setTimeout(() => { 
-    fetchFeedback({ sort: partial.sort, page: 1 });
-  }, 0);
-};
-
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-yellow-100 border border-black text-black">
         <Clock className="w-3 h-3" />
         Pending
       </span>
     );
   };
 
-
   if (loading && !feedbacks.length)
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg">Loading feedback...</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-3xl border-2 border-black shadow-[6px_6px_0_0_#000] bg-white p-6 sm:p-8">
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-16 h-16 border-4 border-black rounded-none animate-spin border-t-transparent" />
+            <h2 className="text-xl sm:text-2xl font-bold text-center">
+              Loading feedback...
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 text-center">
+              Hang tight — pulling messages.
+            </p>
+          </div>
         </div>
       </div>
     );
 
   if (error)
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Error Loading Feedback
-          </h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors"
-          >
-            Retry
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-2xl border-2 border-black shadow-[6px_6px_0_0_#000] bg-white p-6 sm:p-8">
+          <div className="text-center">
+            <MessageCircle className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-4" />
+            <h1 className="text-xl sm:text-2xl font-bold mb-2">
+              Error Loading Feedback
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 mb-6">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 sm:px-6 py-2 sm:py-3 border-2 border-black text-black font-semibold bg-white hover:bg-gray-100 text-sm sm:text-base"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
 
-  
+  // main layout
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Messages
-          </h1>
+<div className="min-h-screen" >
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-2 sm:px-4">
+    
+    {/* LEFT SIDEBAR */}
+    <aside className="lg:col-span-3 w-full ">
+      <div className="lg:sticky lg:top-20 w-full ">
+        <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden w-full flex flex-col p-3 sm:p-5 lg:p-6">
           
-        </div>
-      </div>
+          {/* Profile Card */}
+          <div className="mb-6 w-full">
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Filter Tabs */}
-        <div className=" rounded-lg   mb-6">
-          <div className="p-6">
-           
-            <div className="flex flex-wrap items-center  p-1  rounded-lg gap-3"> Sort by:
-              {[
-  { key: "active", label: "Active", count: stats?.active },
-  { key: "answered", label: "Answered", count: stats?.answered   },
-  
-].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => updateFilters({ sort: tab.key, page: 1 })}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    filters.sort === tab.key
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {tab.label} ({tab.count})
-                </button>
-              ))}
+            <ProfileCard />
+          </div>
+
+          {/* Stats */} 
+          <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-3">
+            <div className="p-3 border-2 border-black bg-white">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-semibold">Total</span>
+                <span className="text-base sm:text-lg font-bold">{stats?.total ?? 0}</span>
+              </div>
+            </div>
+            <div className="p-3 border-2 border-black bg-white">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-semibold">Answered</span>
+                <span className="text-base sm:text-lg font-bold">{stats?.answered ?? 0}</span>
+              </div>
+            </div>
+            <div className="p-3 border-2 border-black bg-white">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-semibold">Pending</span>
+                <span className="text-base sm:text-lg font-bold">{stats?.active ?? 0}</span>
+              </div>
+            </div>
+            <div className="p-3 border-2 border-black bg-white">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-semibold">Answer rate</span>
+                <span className="text-base sm:text-lg font-bold">
+                  {Math.round((stats?.answerRate || 0) * 100) / 100}%
+                </span>
+              </div>
             </div>
           </div>
+
+
         </div>
+      </div>
+    </aside>
 
-        {/* Feedback List */}
-        <div className="bg-white rounded-lg shadow-sm border">
-          {feedbacks.length === 0 ? (
-            <div className="p-12 text-center">
-              <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {filters.search
-                  ? "No matching feedback found"
-                  : "No feedback yet"}
-              </h3>
-              <p className="text-gray-500">
-                {filters.search
-                  ? "Try adjusting your search terms or filters"
-                  : "Feedback will appear here once people start submitting"}
-              </p>
+        {/* RIGHT: Messages */}
+        <main className="lg:col-span-9">
+          <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-6 border-b-2 border-black gap-4">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-extrabold">Messages</h1>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  Manage your customer feedback
+                </p>
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                {[
+                  { key: "active", label: "Active", count: stats?.active ?? 0 },
+                  {
+                    key: "answered",
+                    label: "Answered",
+                    count: stats?.answered ?? 0,
+                  },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => updateFilters({ sort: tab.key, page: 1 })}
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold border-2 border-black whitespace-nowrap ${
+                      filters.sort === tab.key
+                        ? "bg-black text-white"
+                        : "bg-white text-black"
+                    }`}
+                  >
+                    {tab.label} ({tab.count})
+                  </button>
+                ))}
+              </div>
             </div>
-          ) : (
-            <div className="divide-y">
-              {feedbacks.map((feedback) => (
-                <div key={feedback._id} className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        {getStatusBadge(feedback)}
-                        <span className="text-sm text-gray-500">
-                          {new Date(feedback.createdAt).toLocaleDateString()} •{" "}
-                          {new Date(feedback.createdAt).toLocaleTimeString()}
-                        </span>
+            {/* Body */}
+            <div className="p-3 sm:p-6">
+              {/* If no feedback */}
+              {feedbacks.length === 0 ? (
+                <div className="text-center py-12 sm:py-16">
+                  <MessageCircle className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-4" />
+                  <h3 className="text-lg sm:text-xl font-bold mb-2">
+                    {filters.search
+                      ? "No matching feedback found"
+                      : "No feedback yet"}
+                  </h3>
+                  <p className="text-sm sm:text-base text-gray-600">
+                    {filters.search
+                      ? "Try adjusting your search terms or filters"
+                      : "Feedback will appear here once people start submitting"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4 sm:space-y-6">
+                  {feedbacks.map((feedback) => (
+                    <article
+                      key={feedback._id}
+                      className="border-2 border-black bg-white p-3 sm:p-4"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                        <div className="flex-1 w-full">
+                          {/* Header row: status + date */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mb-3">
+                            {getStatusBadge(feedback)}
+                            <div className="text-xs text-gray-600">
+                              {new Date(
+                                feedback.createdAt
+                              ).toLocaleDateString()}{" "}
+                              •{" "}
+                              {new Date(
+                                feedback.createdAt
+                              ).toLocaleTimeString()}
+                            </div>
+                          </div>
+
+                          {/* Question */}
+                          <div className="bg-gray-50 p-2 sm:p-4 ">
+                            <p className="text-sm sm:text-base text-gray-900">
+                              {feedback.question}
+                            </p>
+                          </div>
+
+                          {/* Answer */}
+                          {feedback.answer && (
+                            <div className="mt-2 sm:mt-4 bg-blue-50 p-2 sm:p-4 border-black">
+                              <p className="text-sm sm:text-base text-gray-900">
+                                {feedback.answer}
+                              </p>
+                              <p className="text-xs sm:text-sm text-gray-700 mt-2">
+                                Your response •{" "}
+                                {new Date(
+                                  feedback.updatedAt
+                                ).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-row sm:flex-col items-center w-full sm:w-auto">
+                          {!feedback.isAnswered && (
+                            <button
+                              onClick={() =>
+                                setShowAnswerForm((s) =>
+                                  s === feedback._id ? null : feedback._id
+                                )
+                              }
+                              className="  bg-white flex-1 sm:flex-none"
+                              title="Reply"
+                            >
+                              <Reply className="w-5 sm:w-6 h-5 sm:h-6 mx-auto" />
+                            </button>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Question */}
-                      <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                        <p className="text-gray-900">{feedback.question}</p>
-                      </div>
+                      {/* Inline Answer Form */}
+                      {showAnswerForm === feedback._id && (
+                        <div className="mt-3 sm:mt-4 border-2 border-black p-3 sm:p-4 bg-gray-50">
+                          <h4 className="font-bold mb-2 text-sm sm:text-base">
+                            Write your response
+                          </h4>
+                          <textarea
+                            placeholder="Type your response..."
+                            value={answerFormData.answer}
+                            onChange={handleAnswerChange}
+                            rows={4}
+                            className="w-full px-3 py-2 border-2 border-black resize-none text-sm sm:text-base"
+                          />
 
-                      {/* Answer Section */}
-                      {feedback.answer && (
-                        <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400 mb-4">
-                          <p className="text-gray-900">{feedback.answer}</p>
-                          <p className="text-sm text-blue-700 mt-2">
-                            Your response •{" "}
-                            {new Date(feedback.updatedAt).toLocaleDateString()}
-                          </p>
+                          <div className="mt-3 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3">
+                            <button
+                              onClick={() => {
+                                setShowAnswerForm(null);
+                                resetAnswerForm();
+                              }}
+                              className="px-3 sm:px-4 py-2 border-2 border-black bg-white text-sm sm:text-base"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleAnswerSubmit(feedback._id)}
+                              disabled={
+                                answerLoading || !answerFormData.answer?.trim()
+                              }
+                              className="px-3 sm:px-4 py-2 border-2 border-black bg-black text-white text-sm sm:text-base"
+                            >
+                              {answerLoading ? "Posting..." : "Post Response"}
+                            </button>
+                          </div>
                         </div>
                       )}
-                    </div>
+                    </article>
+                  ))}
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 ml-2">
-                      {!feedback.isAnswered && (
-                        <button
-                          onClick={() =>
-                            setShowAnswerForm(
-                              showAnswerForm === feedback._id
-                                ? null
-                                : feedback._id
-                            )
-                          }
-                          className="p-2 hover:text-gray-400 text-gray-600 transition-colors"
-                          title="Reply"
-                        >
-                          <Reply className="w-6 h-6" />
-                        </button>
-                      )}
+                  {/* Pagination */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mt-4 sm:mt-6">
+                    <div className="text-xs sm:text-sm text-gray-600">
+  Showing page {filters.page} of {pagination?.totalPages ?? 1}
+</div>
+
+<div className="flex gap-2">
+<button
+  onClick={() => changePage(Math.max(1, filters.page - 1))}
+  disabled={filters.page <= 1}
+  className="p-2 border-2 border-black bg-white"
+>
+  <ChevronLeft className="w-4 h-4" />
+</button>
+
+<button
+  onClick={() => changePage(Math.min(pagination?.totalPages ?? 1, filters.page + 1))}
+  disabled={filters.page >= (pagination?.totalPages ?? 1)}
+  className="p-2 border-2 border-black bg-white"
+>
+  <ChevronRight className="w-4 h-4" />
+</button>
+</div>
+
                     </div>
                   </div>
-
-                  {/* Answer Form */}
-                  {showAnswerForm === feedback._id && (
-                    <div className="border rounded-lg p-4 bg-gray-50 mb-4">
-                      <h4 className="font-medium text-gray-900 mb-3">
-                        Write your response
-                      </h4>
-
-                      <textarea
-                        placeholder="Type your response..."
-                        value={answerFormData.answer}
-                        onChange={handleAnswerChange}
-                        rows={4}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      />
-
-                      <div className="flex justify-end gap-2 mt-3">
-                        <button
-                          onClick={() => {
-                            setShowAnswerForm(null);
-                            resetAnswerForm();
-                          }}
-                          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => handleAnswerSubmit(feedback._id)}
-                          disabled={
-                            answerLoading || !answerFormData.answer.trim()
-                          }
-                          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:bg-gray-400"
-                        >
-                          {answerLoading ? "Posting..." : "Post Response"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                
+              )}
+            </div>{" "}
+            {/* /.p-6 */}
+          </div>
+        </main>
       </div>
     </div>
   );
-};
-
-export default FeedbackManagement;
+}

@@ -31,7 +31,7 @@ const ResetPasswordForm = () => {
 
   const verifyToken = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
       
       const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-token/${token}`, {
         method: 'GET',
@@ -55,7 +55,7 @@ const ResetPasswordForm = () => {
   };
 
   const validatePassword = (password) => {
-    if (password.length < 8) {
+    if (password.length < 6) {
       return "Password must be at least 8 characters long";
     }
     if (!/(?=.*[a-z])/.test(password)) {
@@ -97,7 +97,7 @@ const ResetPasswordForm = () => {
     setError("");
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL 
       
       const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
@@ -152,8 +152,8 @@ const ResetPasswordForm = () => {
       <div className="w-full max-w-md mx-auto">
         <div className="rounded-lg border bg-card text-card-foreground shadow-elegant border-0">
           <div className="flex flex-col items-center justify-center p-8">
-            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mb-4"></div>
-            <p className="text-muted-foreground">Verifying reset link...</p>
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mb-4" ></div>
+            <p className="text-muted-foreground"style={{ fontFamily: "Space Grotesk" }}>Verifying reset link...</p>
           </div>
         </div>
       </div>
@@ -169,10 +169,10 @@ const ResetPasswordForm = () => {
             <div className="mx-auto w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
-            <h1 className="text-2xl font-semibold text-foreground">
+            <h1 className="text-2xl font-semibold text-foreground"style={{ fontFamily: "Space Grotesk" }}>
               Password reset successful
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm"style={{ fontFamily: "Space Grotesk" }}>
               Redirecting you now...
             </p>
           </div>
@@ -196,10 +196,10 @@ const ResetPasswordForm = () => {
             <div className="mx-auto w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center">
               <Lock className="h-6 w-6 text-red-600" />
             </div>
-            <h1 className="text-2xl font-semibold text-foreground">
+            <h1 className="text-2xl font-semibold text-foreground"style={{ fontFamily: "Space Grotesk" }}>
               Invalid reset link
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm"style={{ fontFamily: "Space Grotesk" }}>
               This password reset link is invalid or has expired
             </p>
           </div>
@@ -212,7 +212,7 @@ const ResetPasswordForm = () => {
             <div className="space-y-3">
               <button
                 onClick={() => navigate('/')}
-                className="w-full h-12 bg-black hover:bg-gray-800 text-white font-medium rounded-md transition-colors"
+                className="w-full h-12 bg-black hover:bg-gray-800 text-white font-medium  transition-colors"style={{ fontFamily: "Space Grotesk" }}
               >
                 Request new reset link
               </button>
@@ -233,11 +233,11 @@ const ResetPasswordForm = () => {
   // Reset password form
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md">
-        <div className="rounded-lg border bg-card text-card-foreground shadow-elegant border-0">
+      <div className="w-full max-w-md"style={{ fontFamily: "Space Grotesk" }}>
+        <div className="rborder bg-card text-card-foreground shadow-elegant border-1 shadow-card  shadow-[4px_4px_0_0_#000] ">
           {/* Header */}
           <div className="flex flex-col text-center p-6 space-y-2 pb-8">
-            <div className="mx-auto w-12 h-12 bg-secondary rounded-2xl flex items-center justify-center">
+            <div className="mx-auto w-12 h-12 bg-secondary rounded-2xl flex items-center justify-center" >
               <Lock className="h-6 w-6 text-foreground" />
             </div>
             <h1 className="text-2xl font-semibold text-foreground">
@@ -266,7 +266,7 @@ const ResetPasswordForm = () => {
                   value={formData.password}
                   onChange={handleChange("password")}
                   onKeyPress={handleKeyPress}
-                  className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 pr-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                 className="flex h-12 w-full  border border-input bg-input px-3 py-2 pl-10 pr-10 placeholder:text-muted-foreground focus:outline-none focus:outline-none focus:ring-1 focus:ring-ring shadow-card  shadow-[2px_2px_0_0_#000]"
                   disabled={loading}
                 />
                 <button
@@ -287,7 +287,7 @@ const ResetPasswordForm = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange("confirmPassword")}
                   onKeyPress={handleKeyPress}
-                  className="flex h-12 w-full rounded-md border border-input bg-input px-3 py-2 pl-10 pr-10 placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   disabled={loading}
                 />
                 <button
@@ -313,7 +313,7 @@ const ResetPasswordForm = () => {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full h-12 bg-black hover:bg-gray-800 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors"
+                className="w-full h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
               >
                 {loading ? (
                   <div className="flex items-center space-x-2 justify-center">
@@ -339,4 +339,4 @@ const ResetPasswordForm = () => {
   );
 };
 
-export default ResetPasswordForm;
+export default ResetPasswordForm; 

@@ -9,6 +9,7 @@ import sendEmail from "../utils/sendEmail.js";
 import Wall from "../models/Wall.js";
 
 const router = express.Router();
+const isProduction = process.env.NODE_ENV === "production";
 
 const getJWTSecret = () => {
   const JWT_SECRET = process.env.JWT_SECRET;
@@ -22,7 +23,7 @@ const getJWTSecret = () => {
   return JWT_SECRET;
 };
 const setTokenCookie = (res, token) => {
-  const isProduction = process.env.NODE_ENV === "production";
+  
 
   const cookieConfig = {
     httpOnly: true,

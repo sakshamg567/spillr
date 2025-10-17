@@ -187,11 +187,11 @@ const contactUs = (
   return (
 
  <footer  >
-      <div className=" mx-auto px-6 py-8 text-gray-100 bg-black">
+      <div className=" mx-auto px-6 py-8 text-gray-100 bg-black"style={{ fontFamily: "Space Grotesk" }}>
         {/* Footer Top */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-6 md:gap-0">
           <div className="flex flex-col space-y-2 " style={{ fontFamily: "Space Grotesk" }}>
-            <h2 className="text-xl font-bold">Spillr</h2>
+            <h2 className="text-xl font-bold"style={{ fontFamily: "Space Grotesk" }}>Spillr</h2>
             <p className="text-sm text-gray-400 max-w-xs">
               Share and receive anonymous feedback with ease and privacy.
             </p>

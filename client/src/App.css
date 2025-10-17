@@ -27,4 +27,26 @@
 
 }
 
+::-webkit-scrollbar {
+  width: 6px;               
+  height: 6px;              
+}
 
+::-webkit-scrollbar-track {
+  background: #fff;          
+  border-left: 1px solid #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #000;          
+  border: none;             
+  border-radius: 0;          
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #222;          
+}
+* {
+  scrollbar-width: thin;           
+  scrollbar-color: #000 #fff;      
+}

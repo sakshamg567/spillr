@@ -53,6 +53,7 @@ credentials: 'include'
     console.log('API Response:', { 
       url, 
       status: response.status,
+       headers: Object.fromEntries(response.headers.entries()),
       statusText: response.statusText 
     });
 
