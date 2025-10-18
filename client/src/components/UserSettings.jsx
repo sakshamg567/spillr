@@ -96,12 +96,10 @@ const handleProfileChange = (field) => (e) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size must be less than 5MB');
       return;
     }
 
@@ -112,9 +110,7 @@ const handleProfileChange = (field) => (e) => {
     try {
       await uploadProfilePicture(file);
       await reloadProfile();
-       alert('Profile picture updated successfully!');
     } catch (err) {
-      alert(err.message || "Failed to upload picture");
       setPreviewImage(null);
     }
     finally{
@@ -132,9 +128,7 @@ const handleSaveProfile = async () => {
     });
     await reloadProfile();
 
-    alert("Profile updated successfully!");
   } catch (err) {
-    alert(err.message || "Failed to update profile");
   } finally {
     setSavingProfile(false);
   }
@@ -144,9 +138,7 @@ const handleSaveProfile = async () => {
     setSavingNotifications(true);
     try {
       await updateNotifications({ newFeedback: notifications.newFeedback });
-      alert("Notifications updated successfully!");
     } catch (err) {
-      alert(err.message || "Failed to update notifications");
     } finally {
       setSavingNotifications(false);
     }
@@ -154,19 +146,16 @@ const handleSaveProfile = async () => {
 
 const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") {
-      alert("Please type DELETE to confirm");
       return;
     }
 
     try {
       await requestDeletion(deletePassword);
-      alert("Account deletion email sent! Please check your inbox.");
       setShowDeleteModal(false);
       resetDeletionState();
       setDeletePassword("");
       setDeleteConfirmText("");
     } catch (err) {
-      alert(err.message || "Failed to request account deletion");
     }
   };
 

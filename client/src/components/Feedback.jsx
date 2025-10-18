@@ -43,7 +43,6 @@ export default function FeedbackManagement() {
       await submitAnswer(feedbackId, () => {
         setShowAnswerForm(null);
         resetAnswerForm();
-        toast.success("Response posted successfully! ");
       });
     } catch (err) {
       console.error("Answer submission error:", err);
