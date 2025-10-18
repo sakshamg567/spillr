@@ -1,42 +1,40 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
-import ProfileCard from "./ProfileCard";
 import { useNavigate } from "react-router-dom";
 import Feedback from "./Feedback";
 import Footer from "./Footer";
+
 export default function Navbar() {
   const { user, logout, setAuthMode } = useAuth();
-  const [activeItem, setActiveItem] = useState(
-    !!user ? "Messages" : "Register"
-  );
+  const [activeItem, setActiveItem] = useState(user ? "Messages" : "Register");
+  const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
+  const navRefs = useRef({});
   const navigate = useNavigate();
 
-  const getNavItems = (isLoggedIn) => {
-    const baseItems = [];
+  const updateIndicator = (label) => {
+    const el = navRefs.current[label];
+    if (el) {
+      setIndicatorStyle({
+        width: el.offsetWidth,
+        left: el.offsetLeft,
+      });
+    }
+  };
 
+  useEffect(() => {
+    updateIndicator(activeItem);
+  }, [activeItem, user]);
+
+  const getNavItems = (isLoggedIn) => {
     if (isLoggedIn) {
       return [
-        ...baseItems,
-        {
-          label: "Messages",
-          onClick: () => setActiveItem("Messages"),
-          href: "#messages",
-        },
-        {
-          label: "Settings",
-          onClick: () => navigate("/settings"),
-          href: "#settings",
-        },
+        { label: "Messages", onClick: () => setActiveItem("Messages"), href: "#messages" },
+        { label: "Settings", onClick: () => navigate("/settings"), href: "#settings" },
         { label: "Logout", onClick: logout, href: "#logout" },
       ];
     } else {
       return [
-        ...baseItems,
-        {
-          label: "Register",
-          onClick: () => setAuthMode("register"),
-          href: "#register",
-        },
+        { label: "Register", onClick: () => setAuthMode("register"), href: "#register" },
         { label: "Login", onClick: () => setAuthMode("login"), href: "#login" },
       ];
     }
@@ -58,18 +56,29 @@ export default function Navbar() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex space-x-2">
+          <nav className="relative flex items-center gap-4">
+           
+            <div
+              className="absolute bottom-0 h-[4px] bg-black transition-all duration-700 ease-out"
+              style={{
+                width: indicatorStyle.width,
+                left: indicatorStyle.left,
+              }}
+            />
+
             {items.map((item) => (
               <a
                 key={item.label}
+                ref={(el) => (navRefs.current[item.label] = el)}
                 href={item.href}
                 onClick={() => handleItemClick(item)}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200
-                    ${
-                      activeItem === item.label
-                        ? "bg-white/20 text-gray-600 shadow-inner"
-                        : "text-black hover:bg-gray-100 hover:text-gray-900"
-                    }`}
+                onMouseEnter={() => updateIndicator(item.label)}
+                onMouseLeave={() => updateIndicator(activeItem)}
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                  activeItem === item.label
+                    ? "text-gray-700"
+                    : "text-black hover:text-gray-800"
+                }`}
               >
                 {item.label}
               </a>
@@ -79,15 +88,11 @@ export default function Navbar() {
       </header>
 
       {/* Push content below fixed header */}
-      <div className="pt-20 flex items-center justify-center">
-   
-      <Feedback />
+      <div className="pt-20">
+        <Feedback />
       </div>
 
-
-      <div>
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 }

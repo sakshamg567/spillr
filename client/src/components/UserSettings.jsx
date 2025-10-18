@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Images,
 } from "lucide-react";
+import Footer from "./Footer";
 
 
 const UserSettings = () => {
@@ -178,10 +179,10 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50"style={{ fontFamily: "Space Grotesk" }} >
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="bg-white border-b-2 bg-yellow-200">
+        <div className="max-w-7xl mx-auto px-4 py-6 ">
           <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
           <p className="text-gray-600 mt-1">Manage your account preferences</p>
         </div>
@@ -191,15 +192,15 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <div className="lg:w-64">
-            <div className="bg-white rounded-lg shadow-sm border p-4 space-y-2">
+            <div className="bg-white  shadow-elegant border-1 shadow-card  shadow-[6px_4px_0_0_#000] border p-4 space-y-2">
               {tabs.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                     activeTab === id
-                      ? "bg-black text-white"
-                      : "text-gray-600 hover:bg-gray-100"
+                      ? "bg-black rounded-none text-white"
+                      : "text-gray-600 hover:bg-gray-100 hover:rounded-none"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -210,11 +211,11 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 shadow-card  shadow-[6px_4px_0_0_#000] ">
             {/* Profile Tab */}
             {activeTab === "profile" && (
-              <div className="bg-white rounded-lg shadow-sm border">
-                <div className="p-6 border-b">
+              <div className="bg-white  shadow-sm border ">
+                <div className="p-6 border-b-2 ">
                   <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
                   <p className="text-gray-600 mt-1">Update your profile details</p>
                 </div>
@@ -265,7 +266,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       placeholder="Your name"
                       value={profileData.name}
                       onChange={handleProfileChange("name")}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                   </div>
 
@@ -277,9 +278,9 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       placeholder="Your username"
                       value={profileData.username}
                       onChange={handleProfileChange("username")}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     />
-                    <p className="text-xs text-gray-500">Used in your profile URL</p>
+                    
                   </div>
 
                   {/* Bio */}
@@ -290,7 +291,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       value={profileData.bio}
                       onChange={handleProfileChange("bio")}
                       rows={4}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <div className="flex justify-end text-sm">
                       <span className="text-gray-500">{profileData.bio.length}/500</span>
@@ -300,7 +301,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                   <button
                     onClick={handleSaveProfile}
                     disabled={savingProfile}
-                    className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-400"
+                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
                   >
                     {savingProfile ? "Saving..." : "Save Changes"}
                   </button>
@@ -310,8 +311,8 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
 
             {/* Security Tab */}
             {activeTab === "security" && (
-              <div className="bg-white rounded-lg shadow-sm border">
-                <div className="p-6 border-b">
+              <div className="bg-white shadow-sm border ">
+                <div className="p-6 border-b ">
                   <h2 className="text-xl font-semibold text-gray-900">Security Settings</h2>
                   <p className="text-gray-600 mt-1">Manage your password</p>
                 </div>
@@ -320,13 +321,13 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                   <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
   <h3 className="font-medium text-gray-900">Change Password</h3>
               {passwordSuccess && (
-                    <div className="text-green-600 px-4 py-3 rounded-lg text-sm bg-green-50">
+                    <div className="text-green-600 px-4 py-3  text-sm bg-green-50">
                       Password updated successfully!
                     </div>
                   )}
 
                   {passwordErrors.submit && (
-                    <div className="text-red-500 px-4 py-3 rounded-lg text-sm bg-red-50">
+                    <div className="text-red-500 px-4 py-3  text-sm bg-red-50">
                       {passwordErrors.submit}
                     </div>
                   )}
@@ -338,7 +339,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                         type={showPasswords.old ? "text" : "password"}
                         value={passwordData.oldPassword}
                         onChange={handlePasswordChange("oldPassword")}
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         type="button"
@@ -358,7 +359,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                         type={showPasswords.new ? "text" : "password"}
                         value={passwordData.newPassword}
                         onChange={handlePasswordChange("newPassword")}
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         type="button"
@@ -379,7 +380,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                         type={showPasswords.confirm ? "text" : "password"}
                         value={passwordData.confirmPassword}
                         onChange={handlePasswordChange("confirmPassword")}
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         type="button"
@@ -395,7 +396,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                    <button
     type="submit"
     disabled={passwordLoading}
-    className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-400"
+    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
   >
     {passwordLoading ? "Updating..." : "Update Password"}
   </button>
@@ -406,7 +407,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
 
             {/* Notifications Tab */}
             {activeTab === "notifications" && (
-              <div className="bg-white rounded-lg shadow-sm border">
+              <div className="bg-white shadow-sm border">
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
                 </div>
@@ -431,7 +432,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                   <button
                     onClick={handleSaveNotifications}
                     disabled={savingNotifications}
-                    className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-400"
+                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
                   >
                     {savingNotifications ? "Saving..." : "Save Settings"}
                   </button>
@@ -441,17 +442,17 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
 
             {/* Danger Zone Tab */}
    {activeTab === "danger" && (
-              <div className="bg-white rounded-lg shadow-sm border border-red-200">
-                <div className="p-6 border-b border-red-200 bg-red-50">
+              <div className="bg-white  shadow-sm border ">
+                <div className="p-6 border-b ">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
-                    <h2 className="text-xl font-semibold text-red-900">Danger Zone</h2>
+                    <h2 className="text-xl font-semibold text-red-900">Delete Account</h2>
                   </div>
                   <p className="text-red-700 mt-1">Irreversible actions</p>
                 </div>
 
                 <div className="p-6">
-                  <div className="border border-red-200 rounded-lg p-6 bg-red-50">
+                  <div className="border-2 border-red-200  p-6 bg-red-50 ">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Account</h3>
                     <p className="text-gray-600 mb-4">This will permanently delete:</p>
                     <ul className="list-disc list-inside text-gray-600 space-y-1 mb-4">
@@ -462,7 +463,7 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                     </ul>
                     <button
                       onClick={() => setShowDeleteModal(true)}
-                      className="px-6 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 flex items-center gap-2"
+                      className="px-6 py-2 bg-red-600 text-white w-40 h-12 bg-red-100 shadow-card  shadow-[4px_4px_0_0_#000] text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-font-medium hover:bg-red-10 00 flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete My Account
@@ -538,7 +539,9 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
           </div>
         </div>
       )}
+      <Footer />
     </div>
+
   );
 };
 

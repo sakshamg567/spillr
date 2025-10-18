@@ -43,7 +43,7 @@ export default function FeedbackManagement() {
       await submitAnswer(feedbackId, () => {
         setShowAnswerForm(null);
         resetAnswerForm();
-        toast.success("Response posted successfully! ✅");
+        toast.success("Response posted successfully! ");
       });
     } catch (err) {
       console.error("Answer submission error:", err);
@@ -60,6 +60,7 @@ export default function FeedbackManagement() {
         </span>
       );
 
+
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-yellow-100 border border-black text-black">
         <Clock className="w-3 h-3" />
@@ -68,22 +69,16 @@ export default function FeedbackManagement() {
     );
   };
 
-  if (loading && !feedbacks.length)
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-3xl border-2 border-black shadow-[6px_6px_0_0_#000] bg-white p-6 sm:p-8">
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-16 h-16 border-4 border-black rounded-none animate-spin border-t-transparent" />
-            <h2 className="text-xl sm:text-2xl font-bold text-center">
-              Loading feedback...
-            </h2>
-            <p className="text-sm sm:text-base text-gray-600 text-center">
-              Hang tight — pulling messages.
-            </p>
-          </div>
+ if (loading && !feedbacks.length)
+  return (
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-foreground border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-    );
+  );
+
 
   if (error)
     return (
@@ -109,15 +104,15 @@ export default function FeedbackManagement() {
   // main layout
   return (
 <div className="min-h-screen" >
-  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-2 sm:px-4">
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-3 py-4 sm:px-4">
     
     {/* LEFT SIDEBAR */}
     <aside className="lg:col-span-3 w-full ">
       <div className="lg:sticky lg:top-20 w-full ">
-        <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden w-full flex flex-col p-3 sm:p-5 lg:p-6">
+        <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden w-full flex  flex-col p-3 sm:p-5 lg:p-6">
           
           {/* Profile Card */}
-          <div className="mb-6 w-full">
+          <div className="mb-6 ">
 
             <ProfileCard />
           </div>
@@ -157,7 +152,7 @@ export default function FeedbackManagement() {
       </div>
     </aside>
 
-        {/* RIGHT: Messages */}
+        
         <main className="lg:col-span-9">
           <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden">
             {/* Header */}
@@ -165,7 +160,7 @@ export default function FeedbackManagement() {
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-extrabold">Messages</h1>
                 <p className="text-xs sm:text-sm text-gray-600">
-                  Manage your customer feedback
+                  
                 </p>
               </div>
 
@@ -194,7 +189,7 @@ export default function FeedbackManagement() {
               </div>
             </div>
             {/* Body */}
-            <div className="p-3 sm:p-6">
+            <div className="p-2 sm:p-6">
               {/* If no feedback */}
               {feedbacks.length === 0 ? (
                 <div className="text-center py-12 sm:py-16">
@@ -211,7 +206,7 @@ export default function FeedbackManagement() {
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4 sm:space-y-6">
+                <div className="space-y-2 sm:space-y-6">
                   {feedbacks.map((feedback) => (
                     <article
                       key={feedback._id}
@@ -234,11 +229,9 @@ export default function FeedbackManagement() {
                           </div>
 
                           {/* Question */}
-                          <div className="bg-gray-50 p-2 sm:p-4 ">
-                            <p className="text-sm sm:text-base text-gray-900">
-                              {feedback.question}
-                            </p>
-                          </div>
+                         <div className="bg-gray-50 sm:px-4 sm:py-2">
+  <p className="text-sm sm:text-base text-gray-900">{feedback.question}</p>
+</div>
 
                           {/* Answer */}
                           {feedback.answer && (
@@ -265,7 +258,7 @@ export default function FeedbackManagement() {
                                   s === feedback._id ? null : feedback._id
                                 )
                               }
-                              className="  bg-white flex-1 sm:flex-none"
+                              className="  bg-white "
                               title="Reply"
                             >
                               <Reply className="w-5 sm:w-6 h-5 sm:h-6 mx-auto" />

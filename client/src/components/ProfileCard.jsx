@@ -54,81 +54,55 @@ const ProfileCard = () => {
 
   if (loading && !profile) {
     return (
-      <div className="flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-white border border-black shadow-[3px_3px_0_#000] rounded-xl p-6 animate-pulse">
-          <div className="h-40 w-full bg-gray-200 rounded mb-4"></div>
-          <div className="h-6 w-3/4 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 w-1/2 bg-gray-200 rounded"></div>
+      <div className="p-2">
+        <div className="w-full bg-white border border-black shadow-[4px_4px_0_0_#000] rounded-none p-4 animate-pulse"style={{ fontFamily: "Space Grotesk" }}>
+          <div className="h-40 w-full bg-gray-200 rounded-none mb-3"></div>
+          <div className="h-5 w-3/4 mx-auto bg-gray-200 rounded-none mb-2"></div>
+          <div className="h-4 w-1/2 mx-auto bg-gray-200 rounded-none"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-70 border bg-card text-card-foreground shadow-elegant border-1 shadow-card  shadow-[4px_4px_0_0_#000] ">
-      {/* Avatar */}
-      <div className="w-full h-48 bg-purple-100 flex items-center justify-center">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={`${userName}'s avatar`}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="text-3xl font-bold text-purple-600">
-            {userName[0]?.toUpperCase()}
-          </span>
-        )}
-      </div>
+    <div className="w-full border-2 border-black  ">
+     
+<div className="flex items-center justify-center w-56 h-56 bg-gray-100 overflow-hidden mx-auto rounded-md border border-black mt-4">
+  {avatarUrl ? (
+    <img
+      src={avatarUrl}
+      alt={`${userName}'s avatar`}
+      className="object-cover w-full h-full "
+      loading="lazy"
+    />
+  ) : (
+    <span className="text-4xl font-bold text-gray-700">
+      {userName[0]?.toUpperCase()}
+    </span>
+  )}
+</div>
 
-      {/* Card Body */}
-      <div className="p-4 space-y-3">
-        {/* Name Row */}
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-lg text-gray-900 truncate">
+
+      {/* Card Body — ALL CENTERED */}
+      <div className="p-3 space-y-3 text-center">
+        <div className="flex items-center justify-center gap-1"> 
+          <h3 className="font-bold text-base text-gray-900"style={{ fontFamily: "Space Grotesk" }}>
             {userName}
           </h3>
-          {isVerified && <FaCheckCircle className="h-5 w-5 text-blue-500" />}
+          {isVerified && <FaCheckCircle className="h-4 w-4 text-blue-500" />}
         </div>
+        {/* Centered action buttons */}
+        <div className="pt-2 border-t border-gray-200 flex flex-row justify-center gap-4">
+  
+  <button
+    onClick={handleShareLink}
+    className="flex items-center justify-center gap-1 text-xs font-semibold text-gray-700 hover:text-black"
+  >
+    <FaShareAlt className="h-4 w-4 text-black" style={{ fontFamily: "Space Grotesk" }} / >
+    {copySuccess ? "Copied!" : "Share"}
+  </button>
+</div>
 
-        {/* Bio */}
-        {isEditing ? (
-          <textarea
-            className="w-full p-2 border border-gray-300 rounded text-sm resize-none focus:ring-0 focus:border-black"
-            rows={2}
-            value={tempBio}
-            onChange={(e) => setTempBio(e.target.value)}
-            disabled={isOperationPending}
-          />
-        ) : (
-          <p
-            className={`text-sm ${
-              tempBio ? "text-gray-700" : "text-gray-400 italic"
-            }`}
-          >
-            {tempBio || "No bio yet. Click edit to add one."}
-          </p>
-        )}
-
-        {/* Footer Actions */}
-        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-          <button
-            onClick={() => (isEditing ? handleSaveBio() : setIsEditing(true))}
-            className="flex items-center gap-1 text-sm font-semibold text-gray-800 hover:text-black transition"
-            disabled={isOperationPending}
-          >
-            <FaEdit className="h-4 w-4" />
-            {isEditing ? "Save" : "Edit"}
-          </button>
-
-          <button
-            onClick={handleShareLink}
-            className="flex items-center gap-1 text-sm text-gray-700 hover:text-black transition"
-          >
-            <FaShareAlt className="h-4 w-4" />
-            {copySuccess ? "Copied!" : "Share"}
-          </button>
-        </div>
       </div>
     </div>
   );
