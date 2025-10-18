@@ -16,6 +16,7 @@ const PublicWallView = ({ logout }) => {
   const [answeredFeedbacks, setAnsweredFeedbacks] = useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const navigate = useNavigate();
+  const [sent, setSent] = useState(false);
   const [activeItem, setActiveItem] = useState(
     isAuthenticated ? "Dashboard" : "Register"
   );
@@ -115,6 +116,20 @@ const PublicWallView = ({ logout }) => {
     return;
   }
 
+  setLoading(true);
+    try {
+
+      await new Promise((res) => setTimeout(res, 1000));
+
+      setSent(true);
+      setFormData({ question: "" });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  
+
   if (formData.question.length > 500) {
     setError("Message is too long (max 500 characters)");
     return;
@@ -150,6 +165,12 @@ const PublicWallView = ({ logout }) => {
     setLoading(false);
   }
 };
+ useEffect(() => {
+    if (sent) {
+      const timer = setTimeout(() => setSent(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [sent]);
 
 
   if (loadingProfile) {
@@ -188,12 +209,12 @@ const PublicWallView = ({ logout }) => {
   return (
     <div className="min-h-screen bg-[#fef9f3] text-black font-['Space_Grotesk']">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 flex items-center bg-yellow-200 border-b-4 border-black h-16 z-50 shadow-[6px_6px_0_0_#000]">
+      <header className="fixed top-0 left-0 right-0 flex items-center bg-yellow-200 border-b-1 border-black h-16 z-50 ">
         <div className="w-full flex justify-between items-center px-4">
           {/* Logo */}
           <div
             onClick={() => handleNavigation("/")}
-            className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wider cursor-pointer"
+            className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black  cursor-pointer"
           >
             Spillr
           </div>
@@ -214,7 +235,7 @@ const PublicWallView = ({ logout }) => {
                 onClick={() => handleItemClick(item)}
                 onMouseEnter={() => updateIndicator(item.label)} // move line to hover
                 onMouseLeave={() => updateIndicator(activeItem)} // return to active
-                className={`px-3 py-2 text-sm font-semibold uppercase tracking-wide transition-colors duration-200 ${
+                className={`px-3 py-2 text-sm  tracking-wide transition-colors duration-200 ${
                   activeItem === item.label
                     ? "text-black"
                     : "text-black hover:text-gray-800"
@@ -289,13 +310,15 @@ const PublicWallView = ({ logout }) => {
                 {formData.question.length}/500
               </span>
               <button
-                type="submit"
-                disabled={loading || !formData.question.trim()}
-                className="border-2 border-black bg-black text-white px-6 py-3 font-bold shadow-[4px_4px_0_0_#000] hover:bg-yellow-200 hover:text-black transition disabled:opacity-50"
-              >
-                <span>Send</span>
-                <Send className="w-4 h-4 inline-block ml-2" />
-              </button>
+          type="submit"
+          disabled={loading || !formData.question.trim()}
+          className={`border-1 border-black px-6 py-3 font-bold shadow-[4px_4px_0_0_#000] transition
+            ${sent ? "bg-green-400 text-black" : "bg-black text-white hover:bg-yellow-200 hover:text-black"}
+            disabled:opacity-50`}
+        >
+          <span>{sent ? "Sent" : "Send"}</span>
+          <Send className="w-4 h-4 inline-block ml-2" />
+        </button>
             </div>
           </form>
 

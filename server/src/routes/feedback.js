@@ -65,6 +65,8 @@ router.post("/", feedbackLimiter, async (req, res) => {
     const question = rawQuestion?.trim();
     const wallSlug = rawSlug?.trim()?.toLowerCase();
 
+    console.log('Feedback submission:', { wallSlug, questionLength: question?.length });
+
     if (!validateQuestion(question)) {
       return res.status(400).json({
         message: "Question must be between 3-1000 characters",
@@ -74,12 +76,18 @@ router.post("/", feedbackLimiter, async (req, res) => {
     if (!validateSlug(wallSlug)) {
       return res.status(400).json({ message: "Invalid wall slug format" });
     }
-
     const wall = await Wall.findOne({ slug: wallSlug }).populate("ownerId");
 
     if (!wall) {
+      console.error(' Wall not found:', wallSlug);
       return res.status(404).json({ message: "Wall not found" });
     }
+
+    console.log(' Wall found:', { 
+      wallId: wall._id, 
+      ownerId: wall.ownerId?._id,
+      ownerEmail: wall.ownerId?.email 
+    });
 
     const submitterIP = getClientIP(req);
 
@@ -88,7 +96,7 @@ router.post("/", feedbackLimiter, async (req, res) => {
         message: "You are blocked from submitting feedback to this wall.",
       });
     }
-  
+
     if (req.user && Array.isArray(wall.ownerId.blockedUsers)) {
       const isBlocked = wall.ownerId.blockedUsers.some(
         (id) => id.toString() === req.user.id
@@ -108,71 +116,107 @@ router.post("/", feedbackLimiter, async (req, res) => {
     });
 
     await feedback.save();
+    console.log(' Feedback saved:', feedback._id);
 
-    // CRITICAL: Send response IMMEDIATELY - do NOT wait for email
     res.status(201).json(feedback);
 
-    // Send email notification asynchronously (fire and forget)
     const owner = wall.ownerId;
-    
-    console.log("🔍 Debug - Email notification check:");
-    console.log("  Owner exists:", !!owner);
-    console.log("  Owner email:", owner?.email);
-    console.log("  Email notifications enabled:", owner?.emailNotifications?.newFeedback);
-    console.log("  Transporter ready:", !!transporter);
-    
-    if (owner?.emailNotifications?.newFeedback && transporter) {
-      console.log("✉️  Preparing to send email notification...");
-      
+
+    console.log("Email notification check:");
+    console.log("Owner exists:", !!owner);
+    console.log("Owner ID:", owner?._id);
+    console.log("Owner email:", owner?.email);
+    console.log("Owner emailNotifications:", owner?.emailNotifications);
+    console.log("newFeedback enabled:", owner?.emailNotifications?.newFeedback);
+    console.log("Transporter ready:", !!transporter);
+
+
+    if (!owner) {
+      console.error(' Owner not found on wall');
+      return;
+    }
+
+    if (!owner.email) {
+      console.error(' Owner has no email address');
+      return;
+    }
+
+    if (!transporter) {
+      console.error(' Email transporter not configured');
+      return;
+    }
+
+
+    const shouldSendEmail = owner.emailNotifications?.newFeedback !== false;
+
+    if (shouldSendEmail) {
+      console.log(" Sending email notification...");
+
       const mailOptions = {
-        from: process.env.EMAIL_USER, // Simple format - no display name for Brevo
-        to: owner.email,
-        subject: "New message on your Spillr wall",
-        headers: {
-          'X-Mailer': 'Spillr',
+        from: {
+          name: 'Spillr',
+          address: process.env.EMAIL_USER
         },
+        to: owner.email,
+        replyTo: process.env.EMAIL_USER,
+        subject: 'New message on your Spillr wall',
         text: `Hi ${owner.name || "there"},\n\nYou just received a new message:\n\n"${question}"\n\nView your feedback: ${process.env.FRONTEND_URL}/dashboard\n\nYou can disable these notifications in your account settings.`,
         html: `
-          <p>Hi ${validator.escape(owner.name || "there")},</p>
-          <p>You just received a new message:</p>
-          <blockquote>${validator.escape(question)}</blockquote>
-          <p><a href="${process.env.FRONTEND_URL}/public/wall/${owner.username}">View your feedback here</a></p>
-          <hr />
-          <p><small>You can disable these notifications in your account settings.</small></p>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+              <h2 style="color: #000; margin-top: 0;">New Message Received! 📬</h2>
+              <p>Hi <strong>${validator.escape(owner.name || "there")}</strong>,</p>
+              <p>You just received a new message on your Spillr wall:</p>
+              <div style="background-color: #fff; padding: 15px; border-left: 4px solid #000; margin: 20px 0;">
+                <p style="margin: 0; font-style: italic;">"${validator.escape(question)}"</p>
+              </div>
+              <p style="text-align: center;">
+                <a href="${process.env.FRONTEND_URL}/dashboard" 
+                   style="display: inline-block; background-color: #000; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 4px; margin: 10px 0;">
+                  View Your Messages
+                </a>
+              </p>
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <p style="font-size: 12px; color: #666;">
+                You can disable these notifications in your 
+                <a href="${process.env.FRONTEND_URL}/settings" style="color: #000;">account settings</a>.
+              </p>
+            </div>
+          </body>
+          </html>
         `,
       };
 
-      // Fire and forget - don't block, don't fail the request
       transporter.sendMail(mailOptions)
         .then((info) => {
-          console.log(`✅ Feedback email sent successfully!`);
-          console.log(`📧 Message ID: ${info.messageId}`);
-          console.log(`📊 Server Response: ${info.response}`);
-          console.log(`📬 From: ${process.env.EMAIL_USER}`);
-          console.log(`📭 To: ${owner.email}`);
-          console.log(`⏰ Sent at: ${new Date().toISOString()}`);
-          console.log(`🔍 Check Brevo logs: https://app.brevo.com/`);
+          console.log(`successfully!`);
+          console.log(`Message ID: ${info.messageId}`);
+          console.log(` Response: ${info.response}`);
+          console.log(` From: ${process.env.EMAIL_USER}`);
+          console.log(` To: ${owner.email}`);
         })
         .catch((err) => {
-          console.error("❌ Failed to send feedback email!");
+          console.error(" Failed to send feedback email!");
           console.error("Error message:", err.message);
           console.error("Error code:", err.code);
           console.error("Full error:", err);
         });
     } else {
-      console.log("⚠️  Email notification NOT sent because:");
-      if (!owner) console.log("  - Owner not found");
-      if (!owner?.email) console.log("  - Owner has no email address");
-      if (!owner?.emailNotifications?.newFeedback) console.log("  - Email notifications disabled for owner");
-      if (!transporter) console.log("  - Transporter not configured");
+      console.log(" Email notification NOT sent - disabled by user");
     }
 
   } catch (err) {
-    console.error("Feedback submission error:", err.message);
+    console.error(" Feedback submission error:", err.message);
+    console.error(err.stack);
     res.status(500).json({ message: "Unable to submit feedback" });
   }
 });
-
 // Get feedback for owner
 router.get("/owner/:slug", authMiddleware, async (req, res) => {
   try {

@@ -1,4 +1,3 @@
-// Email validation function
 export const validateEmail = (email) => {
   if (!email || typeof email !== 'string') {
     return 'Email is required';
@@ -10,7 +9,6 @@ export const validateEmail = (email) => {
     return 'Email is required';
   }
   
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   
   if (!emailRegex.test(trimmed)) {
@@ -21,7 +19,7 @@ export const validateEmail = (email) => {
     return 'Email address is too long';
   }
   
-  return null; 
+  return null;
 };
 
 export const validatePassword = (password, options = {}) => {
@@ -30,7 +28,7 @@ export const validatePassword = (password, options = {}) => {
   }
   
   const {
-    minLength = 6,
+    minLength = 6, // Changed from 8 to match backend
     maxLength = 128,
     requireConfirm = false,
     confirmPassword = '',
@@ -88,14 +86,13 @@ export const validateName = (name) => {
     return 'Name must be less than 50 characters long';
   }
   
-  
   const nameRegex = /^[a-zA-Z\s\-'.]+$/;
   
   if (!nameRegex.test(trimmed)) {
     return 'Name can only contain letters, spaces, hyphens, apostrophes, and periods';
   }
   
-  return null; 
+  return null;
 };
 
 export const validateText = (text, options = {}) => {
@@ -110,7 +107,7 @@ export const validateText = (text, options = {}) => {
     return `${fieldName} is required`;
   }
   
-  if (!text) return null; 
+  if (!text) return null;
   
   const trimmed = text.trim();
   
@@ -122,7 +119,7 @@ export const validateText = (text, options = {}) => {
     return `${fieldName} must be less than ${maxLength} characters long`;
   }
   
-  return null; 
+  return null;
 };
 
 export const validateUsername = (username) => {
@@ -134,11 +131,10 @@ export const validateUsername = (username) => {
     return "Username must be at least 3 characters long";
   }
   
-  if (username.length > 20) {
-    return "Username must be less than 20 characters";
+  if (username.length > 30) { // Changed from 20 to match backend
+    return "Username must be less than 30 characters";
   }
   
- 
   const usernameRegex = /^(?=.*[a-zA-Z])[a-zA-Z0-9_-]+$/;
 
   if (!usernameRegex.test(username)) {
@@ -147,6 +143,7 @@ export const validateUsername = (username) => {
   
   return null;
 };
+
 
 export const validateLoginPassword = (password) => {
   if (!password || typeof password !== 'string' || password.trim().length === 0) {
