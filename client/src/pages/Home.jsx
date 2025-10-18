@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { LoadingCard } from "../components/Loading";
+import { LoadingSpinner } from "../components/Loading";
 import Navbar from "../components/Navbar";
 import { ArrowRight, Shield, Zap, MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,7 +63,7 @@ const Home = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  if (loading) return <LoadingCard />;
+  if (loading) return <LoadingSpinner />;
 
   const handleCloseModal = () => setAuthMode(null);
 
@@ -150,7 +150,7 @@ const Home = () => {
               >
                 {!hideTitle && (
                   <motion.h2
-                    className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide  pt-2 transition-opacity duration-500"
+                    className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide  pt-2  transition-opacity duration-500"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.5 }}
@@ -158,7 +158,7 @@ const Home = () => {
                     Spillr
                   </motion.h2>
                 )}
-                <div className="absolute left-1/2 transform -translate-x-1/2 pt-2">
+                <div className="absolute left-1/2 transform -translate-x-1/2 pt-2 pl-4">
                   <Navbar />
                 </div>
               </motion.header>

@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import AuthRoute from "./components/AuthRoute";
 import "./App.css";
-import Loading from "./components/Loading";
+import LoadingSpinner from "./components/Loading";
 import Settings from "./components/UserSettings";
 import PublicWallView from "./components/PublicWallView";
 import ResetPasswordForm from './components/auth/ResetPasswordForm'
@@ -17,7 +17,7 @@ const Dashboard = lazy(() => import("./components/Dashboard"));
 
 export default function App() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<LoadingSpinner />}>
       <Routes>
        
         <Route path="/" element={<Home />} />
