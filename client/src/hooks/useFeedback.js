@@ -211,6 +211,7 @@ const changePage = (newPage) => {
     fetchFeedback,
     updateFilters,
     changePage,
+    refetch: fetchFeedback,
     answerFeedback,
     archiveFeedback,
   };

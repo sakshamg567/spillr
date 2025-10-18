@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useOwnerFeedback, useFeedbackAnswer } from "../hooks/useFeedback";
 import toast from "react-hot-toast";
@@ -15,6 +15,7 @@ import ProfileCard from "./ProfileCard";
 export default function FeedbackManagement() {
   const { user } = useAuth();
   const feedbackIdentifier = user?.username || user?.slug;
+
 
   const {
     feedbacks,
@@ -37,6 +38,12 @@ export default function FeedbackManagement() {
   } = useFeedbackAnswer();
 
   const [showAnswerForm, setShowAnswerForm] = useState(null);
+
+  useEffect(() => {
+  const interval = setInterval(() => refetch(), 10000); 
+  return () => clearInterval(interval);
+}, []);
+
 
   const handleAnswerSubmit = async (feedbackId) => {
     try {

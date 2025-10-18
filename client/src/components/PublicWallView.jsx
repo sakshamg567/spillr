@@ -108,29 +108,15 @@ const PublicWallView = ({ logout }) => {
 
   const handleSubmit = async (e) => {
   e.preventDefault();
-
   setError("");
 
-  if (!formData.question.trim()) {
+  const question = formData.question.trim();
+  if (!question) {
     setError("Please enter your message");
     return;
   }
 
-  setLoading(true);
-    try {
-
-      await new Promise((res) => setTimeout(res, 1000));
-
-      setSent(true);
-      setFormData({ question: "" });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  
-
-  if (formData.question.length > 500) {
+  if (question.length > 500) {
     setError("Message is too long (max 500 characters)");
     return;
   }
@@ -147,24 +133,27 @@ const PublicWallView = ({ logout }) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        question: formData.question,
+        question,
         wallSlug: userProfile.slug,
       }),
     });
 
-    if (!response.ok) {
-      const data = await response.json();
-      setError(data.message || "Failed to send message");
-      return;
-    }
+    const data = await response.json();
 
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to send message");
+    }
+    setSent(true);
     setFormData({ question: "" });
+
   } catch (err) {
-    setError("Failed to send message. Please try again.");
+    console.error("Failed to send message:", err);
+    setError(err.message || "Failed to send message. Please try again.");
   } finally {
     setLoading(false);
   }
 };
+
  useEffect(() => {
     if (sent) {
       const timer = setTimeout(() => setSent(false), 2000);
