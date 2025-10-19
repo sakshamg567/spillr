@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useUser,
   usePasswordChange,
@@ -17,12 +18,13 @@ import {
   CheckCircle,
   AlertTriangle,
   Images,
+
 } from "lucide-react";
 import Footer from "./Footer";
 
 
 const UserSettings = () => {
-  
+  const navigate = useNavigate();
   const { profile, loading, updateProfile ,uploadProfilePicture,updateNotifications,reloadProfile} = useUser(true);
 
   const [showPasswords, setShowPasswords] = useState({
@@ -169,13 +171,24 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
 
   return (
     <div className="min-h-screen bg-gray-50"style={{ fontFamily: "Space Grotesk" }} >
-      {/* Header */}
-      <div className="bg-white border-b-2 bg-yellow-200">
-        <div className="max-w-7xl mx-auto px-4 py-6 ">
-          <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
-          <p className="text-gray-600 mt-1">Manage your account preferences</p>
-        </div>
-      </div>
+      
+      <div className="bg-yellow-200 border-b-2 border-black">
+  <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-6">
+  
+    <div>
+      <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
+      <p className="text-gray-600 mt-1">Manage your account preferences</p>
+    </div>
+
+    <button
+      onClick={() => navigate("/dashboard")}
+      className="px-6 py-2 bg-black text-white font-light shadow-[3px_3px_0_0_#000] hover:bg-yellow-300 hover:text-black transition"
+    >
+     Go Back 
+    </button>
+  </div>
+</div>
+
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">

@@ -22,30 +22,29 @@ const getJWTSecret = () => {
 
   return JWT_SECRET;
 };
-const setTokenCookie = (res, token) => {
-  
 
-  const cookieConfig = {
+const getCookieConfig = () => {
+  return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax", // "none" for cross-origin
+    sameSite: isProduction ? "none" : "lax",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 7 * 24 * 60 * 60 * 1000, 
+    domain: undefined 
   };
-
-  console.log("Setting cookie with config:", {
-    ...cookieConfig,
-    token: token ? "SET" : "MISSING",
+};
+const setTokenCookie = (res, token) => {
+   const config = getCookieConfig();
+  console.log(' Setting cookie with config:', {
+    ...config,
+    token: token ? 'PRESENT' : 'MISSING'
   });
-
-  
-  res.cookie("token", token, cookieConfig);
+  res.cookie("token", token, config);
 };
 
-
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
+  windowMs:60 * 1000,
+  max: 100,
   message: { message: "Too many authentication attempts, try again later" },
   skipSuccessfulRequests: true,
 });
@@ -84,7 +83,7 @@ const validateName = (name) => {
   );
 };
 
-const generateUniqueSlug = async (baseSlug) => {
+const generateUniqueSlug = async (baseSlug, maxAttempts = 10) => {
   let slug = baseSlug
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
@@ -94,16 +93,14 @@ const generateUniqueSlug = async (baseSlug) => {
     slug = `user${Date.now()}`.substring(0, 15);
   }
 
-  let counter = 1;
-  let uniqueSlug = slug;
-
-  while (await Wall.findOne({ slug: uniqueSlug })) {
-    uniqueSlug = `${slug}${counter}`;
-    counter++;
+  for (let i = 0; i < maxAttempts; i++) {
+    const uniqueSlug = i === 0 ? slug : `${slug}${i}`;
+    const exists = await Wall.findOne({ slug: uniqueSlug });
+    if (!exists) return uniqueSlug;
   }
-
-  return uniqueSlug;
+  return `${slug}${Date.now()}`.substring(0, 30);
 };
+
 
 const createWallForUser = async (userId, username, name) => {
   try {
@@ -155,6 +152,14 @@ router.get("/me", authMiddleware, async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Not authenticated" });
     }
+     const user = await User.findById(req.user._id)
+      .select('-passwordHash -googleId -resetPasswordToken -resetPasswordExpires')
+      .lean();
+    
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: "User not found or inactive" });
+    }
+
     res.json({
       id: req.user._id,
       name: req.user.name,
@@ -219,20 +224,30 @@ router.post("/register", authLimiter, async (req, res) => {
       username: normalizedUsername,
       passwordHash,
     });
-
-  let wallResult = { success: false };
-    try {
-      wallResult = await createWallForUser(newUser._id, normalizedUsername, name);
-      
-      if (!wallResult.success) {
-        console.warn(`⚠ Wall creation failed for ${normalizedUsername}:`, wallResult.error);
-      } else if (wallResult.alreadyExists) {
-        console.log(` Using existing wall for ${normalizedUsername}`);
+let wallResult = { success: false };
+    const maxWallAttempts = 3;
+    
+    for (let attempt = 1; attempt <= maxWallAttempts; attempt++) {
+      try {
+        console.log(` Wall creation attempt ${attempt}/${maxWallAttempts}`);
+        wallResult = await createWallForUser(newUser._id, normalizedUsername, name);
+        
+        if (wallResult.success) {
+          console.log(' Wall created successfully');
+          break;
+        }
+        
+        if (attempt < maxWallAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 500)); 
+        }
+      } catch (wallError) {
+        console.error(` Wall creation attempt ${attempt} failed:`, wallError.message);
+        if (attempt === maxWallAttempts) {
+          console.error(' All wall creation attempts failed');
+        }
       }
-    } catch (wallError) {
-      console.error(`Wall creation error for ${normalizedUsername}:`, wallError);
-      wallResult = { success: false, error: wallError.message };
     }
+
 
     const JWT_SECRET = getJWTSecret();
     const token = jwt.sign(
@@ -299,10 +314,18 @@ router.post("/login", authLimiter, async (req, res) => {
         message: "Please reset your password",
       });
     }
+ let isMatch = false;
+    try {
+      isMatch = await bcrypt.compare(password, user.passwordHash);
+      console.log(' Password comparison result:', isMatch);
+    } catch (compareError) {
+      console.error(' Password comparison error:', compareError);
+      return res.status(500).json({ message: "Authentication error" });
+    }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      console.log('Password mismatch for:', normalizedEmail);
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     user.lastLogin = new Date();
@@ -428,15 +451,9 @@ router.get("/verify-reset-token/:token", async (req, res) => {
 
 // Logout user
 router.post("/logout", (req, res) => {
-  
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
-    path: "/",
-  });
-
-  console.log("User logged out");
+  const config = getCookieConfig();
+  res.clearCookie("token", config);
+  console.log(' User logged out');
   res.status(200).json({ message: "Logged out successfully" });
 });
 

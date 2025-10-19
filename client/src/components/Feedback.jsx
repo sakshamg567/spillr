@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState,useEffect,useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useOwnerFeedback, useFeedbackAnswer } from "../hooks/useFeedback";
 import toast from "react-hot-toast";
@@ -9,6 +9,7 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  RefreshCw
 } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 
@@ -26,6 +27,7 @@ export default function FeedbackManagement() {
     stats,
     updateFilters,
     changePage,
+     refetch,
   } = useOwnerFeedback(feedbackIdentifier);
 
   const {
@@ -38,12 +40,36 @@ export default function FeedbackManagement() {
   } = useFeedbackAnswer();
 
   const [showAnswerForm, setShowAnswerForm] = useState(null);
+   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
-  const interval = setInterval(() => refetch(), 10000); 
-  return () => clearInterval(interval);
-}, []);
+  let intervalId = null;
+    if (filters.sort === 'active') {
+      intervalId = setInterval(() => {
+        console.log(' Auto-refreshing feedback...');
+        refetch();
+        setLastUpdate(new Date());
+      }, 15000); 
+    }
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [refetch, filters.sort]);
 
+ const handleManualRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+      setLastUpdate(new Date());
+    } catch (err) {
+      toast.error('Failed to refresh');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
 
   const handleAnswerSubmit = async (feedbackId) => {
     try {
@@ -192,6 +218,14 @@ export default function FeedbackManagement() {
                     {tab.label} ({tab.count})
                   </button>
                 ))}
+                <button
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="p-2 border-2 border-black bg-white hover:bg-gray-50 disabled:opacity-50"
+                  title="Refresh now"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
               </div>
             </div>
             {/* Body */}
