@@ -1,19 +1,35 @@
-const Modal = ({ children, onClose }) => {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-70">
-      <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-6 right-8 text-black hover:text-gray-900 dark:hover:text-black"
-        >
-          ✕
-        </button>
+import { useEffect } from "react";
 
-        {children}
-      </div>
-    </div>
+const Modal = ({ children, onClose }) => {
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [onClose]);
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <motion.div
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-lg p-6 bg-white rounded-lg shadow-lg"
+          initial={{ opacity: 0, y: 12, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8, scale: 0.98 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
-
-export default Modal;
+export default Modal

@@ -12,13 +12,30 @@ import { useLocation } from "react-router-dom";
 
 const Modal = ({ children, onClose }) => {
   useEffect(() => {
+
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
+
+  useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleEsc);
     return () => document.removeEventListener("keydown", handleEsc);
   }, [onClose]);
-
   return (
     <AnimatePresence>
       <motion.div
@@ -35,8 +52,9 @@ const Modal = ({ children, onClose }) => {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.98 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-        >
+        ><div className="max-h-[90vh] overflow-y-auto">
           {children}
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
@@ -138,7 +156,7 @@ const Home = () => {
               WebkitMaskComposite: "source-in",
             }}
           />
-          {/* Your Content/Components */}
+          
 
           <div className="relative z-10 ">
             <section className="flex items-center justify-center min-h-screen bg-cover ">
@@ -620,8 +638,9 @@ const Home = () => {
           </motion.div>
         </motion.div>
 
-        <Footer />
+       
       </main>
+       <Footer />
     </motion.div>
   );
 };

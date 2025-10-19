@@ -138,7 +138,7 @@ const RegisterForm = ({
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Full Name"
+                placeholder="Name"
                 value={formData.name}
                 onChange={handleChange("name")}
                 className="flex h-12 w-full  border border-input bg-input px-3 py-2 pl-10 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring shadow-card  shadow-[2px_2px_0_0_#000]  "
