@@ -8,27 +8,32 @@ import mongoose from "mongoose";
 import validator from "validator";
 import rateLimit from "express-rate-limit";
 import { promisify } from "util";
-
-import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { fileTypeFromBuffer } from "file-type";
 import Wall from "../models/Wall.js";
+import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
 
-const F_OK = fs.constants.F_OK; 
+const F_OK = fs.constants.F_OK;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const uploadDir = path.join(__dirname, "..", "uploads");
 
+const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && 
+                          process.env.CLOUDINARY_API_KEY && 
+                          process.env.CLOUDINARY_API_SECRET);
+
+if (!useCloudinary && !fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log(' Using local file storage (Cloudinary not configured)');
+  console.log('   Files will be lost on container restart!');
+}
+
+
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
 const access = promisify(fs.access);
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log('  WARNING: Using local file storage. Files will be lost on container restart!');
-  console.log('For production, use cloud storage (S3, Cloudinary, etc.)');
-}
 
 
 const profileUpdateLimiter = rateLimit({
@@ -135,7 +140,37 @@ const ERROR_MESSAGES = {
   VALIDATION_ERROR: "Invalid input provided",
   USER_NOT_FOUND: "User not found or inactive",
 };
-
+const deleteOldProfilePicture = async (oldProfilePicture) => {
+  if (!oldProfilePicture) return;
+  if (oldProfilePicture.includes('cloudinary.com')) {
+    try {
+      const urlParts = oldProfilePicture.split('/upload/');
+      if (urlParts.length > 1) {
+        const pathAfterUpload = urlParts[1];
+        const pathParts = pathAfterUpload.split('/');
+        const fileWithExt = pathParts[pathParts.length - 1];
+        const publicId = `spillr/profile-pictures/${fileWithExt.split('.')[0]}`;
+        
+        await cloudinary.uploader.destroy(publicId);
+        console.log("Old Cloudinary image deleted:", publicId);
+      }
+    } catch (error) {
+      console.error("Failed to delete old Cloudinary image:", error.message);
+    }
+  }
+  else if (oldProfilePicture.startsWith("/uploads/")) {
+    try {
+      const oldFilePath = path.join(uploadDir, path.basename(oldProfilePicture));
+      await access(oldFilePath, F_OK);
+      await unlink(oldFilePath);
+      console.log("Old local file deleted");
+    } catch (error) {
+      if (error.code !== "ENOENT") {
+        console.error("Failed to delete old local file:", error.message);
+      }
+    }
+  }
+};
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select(
@@ -282,22 +317,61 @@ router.patch(
           .json({ message: "Invalid file type, size, or corrupted file" });
       }
 
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const sanitizedOriginal = sanitizeFilename(req.file.originalname);
-      const filename = `user-${req.user.id}-${uniqueSuffix}-${sanitizedOriginal}`;
-      const filepath = path.join(uploadDir, filename);
+      let profilePictureUrl;
 
-       await writeFile(filepath, req.file.buffer);
-      console.log("✅ File written successfully:", filename);
+      if (useCloudinary) {
+        try {
+          console.log(' Uploading to Cloudinary...');
+          
+          const uploadPromise = new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                folder: 'spillr/profile-pictures',
+                public_id: `user-${req.user.id}-${Date.now()}`,
+                transformation: [
+                  { width: 500, height: 500, crop: 'fill', gravity: 'face' },
+                  { quality: 'auto:good', fetch_format: 'auto' }
+                ],
+                overwrite: true,
+              },
+              (error, result) => {
+                if (error) {
+                  console.error('Cloudinary upload error:', error);
+                  reject(error);
+                } else {
+                  resolve(result);
+                }
+              }
+            );
+            
+            uploadStream.end(req.file.buffer);
+          });
 
-      const profilePictureUrl = `/uploads/${filename}`;
+          const uploadResult = await uploadPromise;
+          profilePictureUrl = uploadResult.secure_url;
+          
+          console.log("Uploaded to Cloudinary:", profilePictureUrl);
+        } catch (cloudinaryError) {
+          console.error("Cloudinary upload failed:", cloudinaryError);
+          throw new Error("Failed to upload image to cloud storage");
+        }
+      } 
+    
+      else {
+        console.log('Using local file storage (Cloudinary not configured)');
+        
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const sanitizedOriginal = sanitizeFilename(req.file.originalname);
+        const filename = `user-${req.user.id}-${uniqueSuffix}-${sanitizedOriginal}`;
+        const filepath = path.join(uploadDir, filename);
 
-      const currentUser = await User.findById(req.user.id).select(
-        "profilePicture"
-      );
-
+        await writeFile(filepath, req.file.buffer);
+        profilePictureUrl = `/uploads/${filename}`;
+        
+        console.log(" Saved locally:", filename);
+      }
+      const currentUser = await User.findById(req.user.id).select("profilePicture");
       if (!currentUser) {
-        console.error("User not found for ID:", req.user.id);
         return res.status(404).json({ message: "User not found" });
       }
 
@@ -310,36 +384,10 @@ router.patch(
       );
 
       if (!user) {
-        try {
-          await unlink(filepath);
-        } catch (cleanupError) {
-          console.error(
-            "Failed to cleanup uploaded file:",
-            cleanupError.message
-          );
-        }
         return res.status(404).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
       }
 
-      if (oldProfilePicture && oldProfilePicture.startsWith("/uploads/")) {
-        const oldFilePath = path.join(
-          uploadDir,
-          path.basename(oldProfilePicture)
-        );
-
-        try {
-          await access(oldFilePath, F_OK);
-          await unlink(oldFilePath);
-          console.log("Old profile picture deleted successfully");
-        } catch (error) {
-          if (error.code !== "ENOENT") {
-            console.error(
-              "Failed to delete old profile picture:",
-              error.message
-            );
-          }
-        }
-      }
+      await deleteOldProfilePicture(oldProfilePicture);
 
       res.json({
         message: "Profile picture updated successfully",
@@ -350,9 +398,9 @@ router.patch(
 
       if (error instanceof multer.MulterError) {
         if (error.code === "LIMIT_FILE_SIZE") {
-          return res
-            .status(400)
-            .json({ message: "File size too large. Maximum 5MB allowed" });
+          return res.status(400).json({ 
+            message: "File size too large. Maximum 5MB allowed" 
+          });
         }
         if (error.code === "LIMIT_UNEXPECTED_FILE") {
           return res.status(400).json({ message: "Unexpected file field" });
