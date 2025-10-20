@@ -116,7 +116,6 @@ const PublicWallView = ({ logout }) => {
     }
   }, [slug, API_BASE_URL]);
 
-  // Initial load
   useEffect(() => {
     if (slug) {
       fetchUserProfile();

@@ -28,7 +28,7 @@ export const validatePassword = (password, options = {}) => {
   }
   
   const {
-    minLength = 6, // Changed from 8 to match backend
+    minLength = 6, 
     maxLength = 128,
     requireConfirm = false,
     confirmPassword = '',
@@ -131,7 +131,7 @@ export const validateUsername = (username) => {
     return "Username must be at least 3 characters long";
   }
   
-  if (username.length > 30) { // Changed from 20 to match backend
+  if (username.length > 30) { 
     return "Username must be less than 30 characters";
   }
   

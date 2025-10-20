@@ -104,9 +104,9 @@ const WallStats = ({ stats, className = '' }) => {
         </div>
       )}
 
-      {/* Additional Insights */}
+     
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Activity Overview */}
+        
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="font-medium text-gray-900 mb-4">Activity Overview</h3>
           <div className="space-y-3">
