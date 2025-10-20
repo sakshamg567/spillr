@@ -92,7 +92,7 @@ headers: {
       if (response.status === 429 && retryOn429) {
         const retryAfter = response.headers.get("Retry-After");
         const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 3000;
-        if (isDev) console.warn(`Rate limited. Retrying after ${waitMs}ms...`);
+       console.warn(`Rate limited. Retrying after ${waitMs}ms...`);
         await new Promise((res) => setTimeout(res, waitMs));
         return apiRequest(endpoint, options, { timeout, retryOn429: false });
       }
