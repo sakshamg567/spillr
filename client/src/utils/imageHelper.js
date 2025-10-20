@@ -1,15 +1,18 @@
-
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  
-  
+
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
   
-  const baseUrl = import.meta.env.VITE_API_BASE_URL 
-  const cleanPath = imagePath.replace(/^\/+/, '');
+
+  if (imagePath.startsWith('/uploads/')) {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    return `${baseUrl}${imagePath}`;
+  }
   
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const cleanPath = imagePath.replace(/^\/+/, '');
   return `${baseUrl}/${cleanPath}`;
 };
 
@@ -22,4 +25,9 @@ export const getInitials = (name) => {
   }
   
   return name[0].toUpperCase();
+};
+
+export const isValidImageUrl = (url) => {
+  if (!url) return false;
+  return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/uploads/');
 };
