@@ -191,7 +191,7 @@ const PublicWallView = ({ logout }) => {
      
       setTimeout(() => {
         fetchAnsweredFeedback();
-      }, 2000);
+      }, 3000);
 
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -203,7 +203,7 @@ const PublicWallView = ({ logout }) => {
 
   useEffect(() => {
     if (sent) {
-      const timer = setTimeout(() => setSent(false), 2000);
+      const timer = setTimeout(() => setSent(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [sent]);

@@ -43,22 +43,17 @@ export default function FeedbackManagement() {
    const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
-  useEffect(() => {
+ useEffect(() => {
   let intervalId = null;
-    if (filters.sort === 'active') {
-      intervalId = setInterval(() => {
-        console.log(' Auto-refreshing feedback...');
-        refetch();
-        setLastUpdate(new Date());
-      }, 15000); 
-    }
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [refetch, filters.sort]);
-
+  if (filters.sort === 'active') {
+    intervalId = setInterval(() => {
+      refetch(); 
+    }, 30000);
+  }
+  return () => {
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [filters.sort]); 
  const handleManualRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {

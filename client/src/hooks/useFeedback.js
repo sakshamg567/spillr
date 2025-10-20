@@ -153,7 +153,7 @@ export const useOwnerFeedback = (slug) => {
     } finally {
       setLoading(false);
     }
-  }, [slug, filters]);
+  }, [slug, filters.sort, filters.page, filters.limit, filters.search]);
 
   useEffect(() => {
     fetchFeedback();

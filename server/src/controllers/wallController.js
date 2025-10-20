@@ -72,15 +72,36 @@ export const getPublicWall = async (req, res) => {
   }
 
   try {
-    const wall = await Wall.findOne({ slug: slug.toLowerCase() })
+    const wall = await Wall.findOne({ username: slug.toLowerCase() })
       .populate("ownerId", "name username bio profilePicture socialLinks")
       .select("slug customColors theme")
       .lean();
     
     if (!wall) {
-      return res.status(404).json({ error: "Wall not found" });
+      const wallBySlug = await Wall.findOne({ slug: slug.toLowerCase() })
+        .populate("ownerId", "name username bio profilePicture socialLinks")
+        .select("slug customColors theme")
+        .lean();
+      
+      if (!wallBySlug) {
+        return res.status(404).json({ error: "Wall not found" });
+      }
+      
+      return res.json({
+        name: wallBySlug.ownerId.name,
+        username: wallBySlug.ownerId.username,
+        bio: wallBySlug.ownerId.bio || '',
+        profilePicture: wallBySlug.ownerId.profilePicture || null,
+        socialLinks: wallBySlug.ownerId.socialLinks || [],
+        slug: wallBySlug.slug,
+        customColors: wallBySlug.customColors || {
+          primary: '#000000',
+          secondary: '#ffffff',
+          accent: '#3b82f6',
+        },
+        theme: wallBySlug.theme || 'light',
+      });
     }
-
 
     if (!wall.ownerId) {
       return res.status(404).json({ error: "Wall owner not found" });

@@ -1,11 +1,14 @@
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
 
+  if (imagePath.includes('cloudinary.com')) {
+    return imagePath;
+  }
+
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
   
-
   if (imagePath.startsWith('/uploads/')) {
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     return `${baseUrl}${imagePath}`;
@@ -29,5 +32,10 @@ export const getInitials = (name) => {
 
 export const isValidImageUrl = (url) => {
   if (!url) return false;
-  return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/uploads/');
+  return (
+    url.startsWith('http://') || 
+    url.startsWith('https://') || 
+    url.startsWith('/uploads/') ||
+    url.includes('cloudinary.com')
+  );
 };

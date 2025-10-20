@@ -41,18 +41,20 @@ app.use(
       if (!origin) return callback(null, true);
       
       if (allowedOrigins.includes(origin)) {
-        console.log('CORS allowed for:', origin);
+        console.log(' CORS allowed for:', origin);
         callback(null, true);
       } else {
-        console.warn('CORS blocked for:', origin);
+        console.warn(' CORS blocked for:', origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
-    credentials: true, 
+    credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cookie"],
     exposedHeaders: ['Set-Cookie'],
     optionsSuccessStatus: 200,
+    preflightContinue: false,
+    maxAge: 86400
   })
 );
 

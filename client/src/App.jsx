@@ -22,7 +22,7 @@ export default function App() {
        
         <Route path="/" element={<Home />} />
         
-          <Route path="/public/wall/:slug" element={<PublicWallView />} />
+          <Route path="/wall/:slug" element={<PublicWallView />} />
            <Route path="/reset-password" element={<ResetPasswordForm />} />
         <Route element={<AuthRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />

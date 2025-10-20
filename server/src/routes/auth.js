@@ -30,7 +30,7 @@ const getCookieConfig = () => {
     sameSite: isProduction ? "none" : "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000, 
-    domain: undefined 
+    domain: isProduction ? undefined : undefined
   };
 };
 const setTokenCookie = (res, token) => {
@@ -295,15 +295,15 @@ router.post("/login", authLimiter, async (req, res) => {
     const email = rawEmail?.trim();
 
     if (!validateEmail(email) || !password) {
-      return res
-        .status(400)
-        .json({ message: "Valid email and password required" });
+      return res.status(400).json({ message: "Valid email and password required" });
     }
 
     const normalizedEmail = email.toLowerCase();
-    const user = await User.findOne({ email: normalizedEmail }).select(
-      "+passwordHash"
-    );
+    
+
+    const user = await User.findOne({ email: normalizedEmail })
+      .select("+passwordHash")
+      .lean(); 
 
     if (!user || !user.isActive) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -314,22 +314,25 @@ router.post("/login", authLimiter, async (req, res) => {
         message: "Please reset your password",
       });
     }
- let isMatch = false;
+
+    let isMatch = false;
     try {
       isMatch = await bcrypt.compare(password, user.passwordHash);
-      console.log(' Password comparison result:', isMatch);
+      console.log('Password comparison result:', isMatch);
     } catch (compareError) {
       console.error(' Password comparison error:', compareError);
       return res.status(500).json({ message: "Authentication error" });
     }
 
     if (!isMatch) {
-      console.log('Password mismatch for:', normalizedEmail);
+      console.log(' Password mismatch for:', normalizedEmail);
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    user.lastLogin = new Date();
-    await user.save();
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { lastLogin: new Date() } }
+    );
 
     const JWT_SECRET = getJWTSecret();
     const token = jwt.sign(
@@ -340,7 +343,7 @@ router.post("/login", authLimiter, async (req, res) => {
 
     setTokenCookie(res, token);
 
-        res.status(200).json({
+    res.status(200).json({
       success: true,
       message: "Login successful",
       user: {
@@ -351,12 +354,10 @@ router.post("/login", authLimiter, async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Login error:", err);
+    console.error(" Login error:", err);
     res.status(500).json({ message: "Login failed" });
   }
 });
-
-
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
