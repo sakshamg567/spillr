@@ -402,7 +402,7 @@ router.patch(
 
       res.json({
         message: "Profile picture updated successfully",
-        profilePicture: profilePictureUrl,
+         profilePicture: profilePictureUrl,
         user: {
           id: user._id,
           name: user.name,
@@ -478,6 +478,7 @@ router.post(
   passwordChangeLimiter,
   async (req, res) => {
     try {
+      
       const { oldPassword, newPassword } = req.body;
 
       if (!oldPassword || !newPassword) {
@@ -533,6 +534,8 @@ router.post(
   }
 );
 
+import sendEmail from '../services/emailService.js';
+
 router.post(
   "/request-account-deletion",
   authMiddleware,
@@ -542,8 +545,6 @@ router.post(
       const { currentPassword } = req.body;
       const userId = req.user.id;
 
-      console.log("Account deletion request from user:", userId);
-
       const user = await User.findById(userId).select("+passwordHash");
       if (!user || !user.isActive) {
         return res.status(404).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
@@ -552,16 +553,13 @@ router.post(
       if (user.passwordHash) {
         if (!currentPassword) {
           return res.status(400).json({
-            message:
-              "Current password required for account deletion confirmation",
+            message: "Current password required for account deletion confirmation",
           });
         }
 
         const isMatch = await user.comparePassword(currentPassword);
         if (!isMatch) {
-          return res
-            .status(400)
-            .json({ message: "Current password is incorrect" });
+          return res.status(400).json({ message: "Current password is incorrect" });
         }
       }
 
@@ -574,90 +572,57 @@ router.post(
         accountDeletionTokenExpiry: expiry,
       });
 
-      console.log("📧 Checking email config for deletion email...");
-      console.log("  Transporter:", !!transporter);
-      console.log("  User email:", user.email);
+      const confirmationUrl = `${process.env.FRONTEND_URL}/confirm-deletion`;
 
-      if (transporter) {
-        try {
-          const confirmationUrl = `${process.env.FRONTEND_URL}/confirm-deletion`;
+      const mailContent = {
+        to: user.email,
+        subject: "Confirm Account Deletion - Spillr",
+        text: `To confirm deletion, visit: ${confirmationUrl}`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #856404;">
+              <h2 style="color: #856404; margin-top: 0;">Account Deletion Request</h2>
+              <p>Hi <strong>${validator.escape(user.name || "there")}</strong>,</p>
+              <p>You have requested to delete your Spillr account.</p>
+              <p><strong>To complete the deletion process:</strong></p>
+              <ol>
+                <li>Visit: <a href="${confirmationUrl}" style="color: #856404;">${confirmationUrl}</a></li>
+                <li>Enter your deletion token: <code style="background: #f8f9fa; padding: 2px 6px;">${token}</code></li>
+                <li>Enter your User ID: <code style="background: #f8f9fa; padding: 2px 6px;">${userId}</code></li>
+              </ol>
+              <p><strong>This link expires in ${ACCOUNT_DELETION_TOKEN_EXPIRY_HOURS} hours.</strong></p>
+              <p>If you did not request this, please ignore this email.</p>
+            </div>
+          </body>
+          </html>
+        `
+      };
 
-          const mailOptions = {
-            from: {
-              name: "Spillr Support",
-              address: process.env.EMAIL_USER,
-            },
-            to: user.email,
-            subject: "Confirm Account Deletion - Spillr",
-            text: `Hi ${
-              user.name || "there"
-            },\n\nYou requested to delete your Spillr account.\n\nTo complete deletion:\n1. Visit: ${confirmationUrl}\n2. Enter token: ${token}\n3. Enter User ID: ${userId}\n\nThis expires in ${ACCOUNT_DELETION_TOKEN_EXPIRY_HOURS} hours.\n\nIf you didn't request this, ignore this email.`,
-            html: `
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              </head>
-              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #856404;">
-                  <h2 style="color: #856404; margin-top: 0;">⚠️ Account Deletion Request</h2>
-                  <p>Hi <strong>${validator.escape(
-                    user.name || "there"
-                  )}</strong>,</p>
-                  <p>You have requested to delete your Spillr account (<strong>${validator.escape(
-                    user.email
-                  )}</strong>).</p>
-                  <p><strong>To complete the deletion process:</strong></p>
-                  <ol>
-                    <li>Visit: <a href="${confirmationUrl}" style="color: #856404;">${confirmationUrl}</a></li>
-                    <li>Enter your deletion token: <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${token}</code></li>
-                    <li>Enter your User ID: <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${userId}</code></li>
-                  </ol>
-                  <p><strong>This link and token expire in ${ACCOUNT_DELETION_TOKEN_EXPIRY_HOURS} hours.</strong></p>
-                  <p>If you did not request this deletion, please ignore this email and your account will remain active.</p>
-                  <p style="color: #dc3545;"><em>⚠️ Warning: This action is permanent and cannot be undone.</em></p>
-                  <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-                  <p style="font-size: 12px; color: #666;">
-                    Thanks,<br>The Spillr Team
-                  </p>
-                </div>
-              </body>
-              </html>
-            `,
-          };
+      const emailResult = await sendEmail(mailContent);
 
-          console.log(" Sending account deletion email...");
-          await transporter.sendMail(mailOptions);
-          console.log(" Account deletion email sent successfully");
-
-          res.json({
-            message: `Account deletion confirmation sent to ${user.email}. Please check your inbox.`,
-          });
-        } catch (emailError) {
-          console.error(" Account deletion email error:", emailError.message);
-          console.error(emailError);
-          return res.status(500).json({
-            message:
-              "Failed to send confirmation email. Please try again later.",
-          });
-        }
+      if (emailResult.success) {
+        res.json({
+          message: `Account deletion confirmation sent to ${user.email}. Please check your inbox.`,
+        });
       } else {
-        console.warn(
-          " Transporter not configured - cannot send deletion email"
-        );
-        res.status(200).json({
-          message:
-            "Account marked for deletion. Email service not configured - please contact support.",
+        res.status(500).json({
+          message: "Failed to send confirmation email. Please try again later.",
         });
       }
+
     } catch (error) {
       console.error("Account deletion request error:", error.message);
-      console.error(error.stack);
       res.status(500).json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
     }
   }
 );
+
 router.post("/confirm-account-deletion", async (req, res) => {
   try {
     const { token, userId } = req.body;

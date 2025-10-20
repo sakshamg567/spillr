@@ -358,6 +358,8 @@ router.post("/login", authLimiter, async (req, res) => {
     res.status(500).json({ message: "Login failed" });
   }
 });
+
+
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
 
@@ -365,7 +367,6 @@ router.post("/forgot-password", async (req, res) => {
 
   try {
     const user = await User.findOne({ email: email.toLowerCase() });
-
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -377,19 +378,25 @@ router.post("/forgot-password", async (req, res) => {
 
     const resetURL = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-    const message = `
-      <p>You requested a password reset.</p>
-      <p>Click this link to reset your password:</p>
-      <a href="${resetURL}">${resetURL}</a>
-    `;
-
-    await sendEmail({
+    const mailContent = {
       to: user.email,
-      subject: "Password Reset Request",
-      html: message,
-    });
+      subject: "Password Reset Request - Spillr",
+      text: `Click this link to reset your password: ${resetURL}`,
+      html: `
+        <p>You requested a password reset.</p>
+        <p>Click this link to reset your password:</p>
+        <a href="${resetURL}">${resetURL}</a>
+        <p>This link expires in 1 hour.</p>
+      `
+    };
 
-    res.status(200).json({ message: "Reset link sent to your email" });
+    const emailResult = await sendEmail(mailContent);
+    
+    if (emailResult.success) {
+      res.status(200).json({ message: "Reset link sent to your email" });
+    } else {
+      res.status(500).json({ message: "Failed to send reset email. Please try again." });
+    }
   } catch (err) {
     console.error("Forgot password error:", err);
     res.status(500).json({ message: "Server error" });

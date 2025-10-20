@@ -4,7 +4,7 @@ import Wall from "../models/Wall.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import transporter from "../config/email.js";
 import validator from "validator";
-
+import sendEmail from "../config/email.js";
 import mongoose from "mongoose";
 import rateLimit from "express-rate-limit";
 
@@ -130,36 +130,11 @@ router.post("/", feedbackLimiter, async (req, res) => {
     console.log("newFeedback enabled:", owner?.emailNotifications?.newFeedback);
     console.log("Transporter ready:", !!transporter);
 
-
-    if (!owner) {
-      console.error(' Owner not found on wall');
-      return;
-    }
-
-    if (!owner.email) {
-      console.error(' Owner has no email address');
-      return;
-    }
-
-    if (!transporter) {
-      console.error(' Email transporter not configured');
-      return;
-    }
-
-
-    const shouldSendEmail = owner.emailNotifications?.newFeedback !== false;
-
-    if (shouldSendEmail) {
-      console.log(" Sending email notification...");
-
-      const mailOptions = {
-        from: {
-         from: `"Spillr" <${process.env.EMAIL_USER}>`,
-        },
+ if (owner?.email && owner?.emailNotifications?.newFeedback !== false) {
+      const mailContent = {
         to: owner.email,
-        replyTo: process.env.EMAIL_USER,
         subject: 'New message on your Spillr wall',
-        text: `Hi ${owner.name || "there"},\n\nYou just received a new message:\n\n"${question}"\n\nView your feedback: ${process.env.FRONTEND_URL}/dashboard\n\nYou can disable these notifications in your account settings.`,
+        text: `Hi ${owner.name || "there"},\n\nYou just received a new message:\n\n"${question}"\n\nView your feedback: ${process.env.FRONTEND_URL}/dashboard`,
         html: `
           <!DOCTYPE html>
           <html>
@@ -189,33 +164,23 @@ router.post("/", feedbackLimiter, async (req, res) => {
             </div>
           </body>
           </html>
-        `,
+        `
       };
 
-      transporter.sendMail(mailOptions)
-        .then((info) => {
-          console.log(`successfully!`);
-          console.log(`Message ID: ${info.messageId}`);
-          console.log(` Response: ${info.response}`);
-          console.log(` From: ${process.env.EMAIL_USER}`);
-          console.log(` To: ${owner.email}`);
-        })
-        .catch((err) => {
-          console.error(" Failed to send feedback email!");
-          console.error("Error message:", err.message);
-          console.error("Error code:", err.code);
-          console.error("Full error:", err);
-        });
-    } else {
-      console.log(" Email notification NOT sent - disabled by user");
+      const emailResult = await sendEmail(mailContent);
+      if (emailResult.success) {
+        console.log('Notification email sent');
+      } else {
+        console.error('Failed to send notification email:', emailResult.error);
+      }
     }
 
   } catch (err) {
-    console.error(" Feedback submission error:", err.message);
-    console.error(err.stack);
+    console.error("Feedback submission error:", err.message);
     res.status(500).json({ message: "Unable to submit feedback" });
   }
 });
+
 // Get feedback for owner
 router.get("/owner/:slug", authMiddleware, async (req, res) => {
   try {

@@ -25,6 +25,12 @@ const ProfileCard = () => {
 
   const [imageError, setImageError] = useState(false);
 
+  useEffect(() => {
+    if (profile) {
+      setImageError(false);
+    }
+  }, [profile]);
+
   const isVerified = profile?.isVerified || false;
   const userBio = profile?.bio || "";
 

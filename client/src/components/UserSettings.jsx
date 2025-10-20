@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect,useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useUser,
   usePasswordChange,
-  useAccountDeletion
+  useAccountDeletion,
 } from "../hooks/useUser";
 
 import {
@@ -18,20 +18,25 @@ import {
   CheckCircle,
   AlertTriangle,
   Images,
-
 } from "lucide-react";
 import Footer from "./Footer";
 
-
 const UserSettings = () => {
   const navigate = useNavigate();
-  const { profile, loading, updateProfile ,uploadProfilePicture,updateNotifications,reloadProfile} = useUser(true);
+  const {
+    profile,
+    loading,
+    updateProfile,
+    uploadProfilePicture,
+    updateNotifications,
+    reloadProfile,
+  } = useUser(true);
 
   const [showPasswords, setShowPasswords] = useState({
-  old: false,
-  new: false,
-  confirm: false,
-});
+    old: false,
+    new: false,
+    confirm: false,
+  });
   const {
     formData: passwordData,
     errors: passwordErrors,
@@ -39,7 +44,7 @@ const UserSettings = () => {
     success: passwordSuccess,
     handleChange: handlePasswordChange,
     handleSubmit: handlePasswordSubmit,
-    resetForm:resetPasswordForm,
+    resetForm: resetPasswordForm,
   } = usePasswordChange();
 
   const {
@@ -50,8 +55,7 @@ const UserSettings = () => {
     resetState: resetDeletionState,
   } = useAccountDeletion();
 
-  
-   const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("profile");
   const [previewImage, setPreviewImage] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
@@ -66,10 +70,9 @@ const UserSettings = () => {
   const [notifications, setNotifications] = useState({
     newFeedback: false,
   });
-const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-
-useEffect(() => {
+  useEffect(() => {
     if (profile) {
       setProfileData({
         name: profile.name || "",
@@ -89,15 +92,15 @@ useEffect(() => {
     { id: "danger", label: "Delete Account", icon: AlertTriangle },
   ];
 
-const handleProfileChange = (field) => (e) => {
+  const handleProfileChange = (field) => (e) => {
     setProfileData((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
- const handleProfilePictureChange = async (e) => {
+  const handleProfilePictureChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       return;
     }
 
@@ -112,31 +115,31 @@ const handleProfileChange = (field) => (e) => {
     try {
       await uploadProfilePicture(file);
       await reloadProfile();
+       setPreviewImage(null);
     } catch (err) {
-      setPreviewImage(null);
-    }
-    finally{
+      console.error('Upload failed:', err);
+       setPreviewImage(null);
+    } finally {
       setUploadingImage(false);
     }
   };
 
-const handleSaveProfile = async () => {
-  setSavingProfile(true);
-  try {
-    await updateProfile({
-      name: profileData.name,
-      username: profileData.username,
-      bio: profileData.bio,
-    });
-    await reloadProfile();
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      await updateProfile({
+        name: profileData.name,
+        username: profileData.username,
+        bio: profileData.bio,
+      });
+      await reloadProfile();
+    } catch (err) {
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
-  } catch (err) {
-  } finally {
-    setSavingProfile(false);
-  }
-};
-
-    const handleSaveNotifications = async () => {
+  const handleSaveNotifications = async () => {
     setSavingNotifications(true);
     try {
       await updateNotifications({ newFeedback: notifications.newFeedback });
@@ -146,7 +149,7 @@ const handleSaveProfile = async () => {
     }
   };
 
-const handleDeleteAccount = async () => {
+  const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "DELETE") {
       return;
     }
@@ -157,38 +160,51 @@ const handleDeleteAccount = async () => {
       resetDeletionState();
       setDeletePassword("");
       setDeleteConfirmText("");
-    } catch (err) {
-    }
+    } catch (err) {}
   };
 
+const displayImage = useMemo(() => {
+  if (uploadingImage && previewImage) {
+    return previewImage;
+  }
+  if (profile?.profilePicture) {
+    if (profile.profilePicture.startsWith('http')) {
+      return profile.profilePicture;
+    }
+    if (profile.profilePicture.startsWith('/uploads/')) {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      return `${baseUrl}${profile.profilePicture}`;
+    }
+    return profile.profilePicture;
+  }
 
-const displayImage = previewImage || (profile?.profilePicture?.startsWith("http")
-  ? profile.profilePicture
-  : profile?.profilePicture
-  ? `${import.meta.env.VITE_API_BASE_URL}${profile.profilePicture}`
-  : null);
-
+  return null;
+}, [profile?.profilePicture, uploadingImage, previewImage]);
 
   return (
-    <div className="min-h-screen bg-gray-50"style={{ fontFamily: "Space Grotesk" }} >
-      
-      <div className="bg-yellow-200 border-b-2 border-black">
-  <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-6">
-  
-    <div>
-      <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
-      <p className="text-gray-600 mt-1">Manage your account preferences</p>
-    </div>
-
-    <button
-      onClick={() => navigate("/dashboard")}
-      className="px-6 py-2 bg-black text-white font-light shadow-[3px_3px_0_0_#000] hover:bg-yellow-300 hover:text-black transition"
+    <div
+      className="min-h-screen bg-gray-50"
+      style={{ fontFamily: "Space Grotesk" }}
     >
-     Go Back 
-    </button>
-  </div>
-</div>
+      <div className="bg-yellow-200 border-b-2 border-black">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Account Settings
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage your account preferences
+            </p>
+          </div>
 
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="px-6 py-2 bg-black text-white font-light shadow-[3px_3px_0_0_#000] hover:bg-yellow-300 hover:text-black transition"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -218,8 +234,12 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
             {activeTab === "profile" && (
               <div className="bg-white  shadow-sm border ">
                 <div className="p-6 border-b-2 ">
-                  <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-                  <p className="text-gray-600 mt-1">Update your profile details</p>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Profile Information
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    Update your profile details
+                  </p>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -228,7 +248,11 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                     <div className="relative">
                       <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden">
                         {displayImage ? (
-                          <img src={displayImage} alt="Profile" className="w-full h-full object-cover" />
+                          <img
+                            src={displayImage}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-300">
                             <User className="w-8 h-8 text-gray-500" />
@@ -252,17 +276,25 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       )}
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Profile Photo</h3>
-                      <p className="text-sm text-gray-500">JPG, PNG or WebP. Max 5MB.</p>
+                      <h3 className="font-medium text-gray-900">
+                        Profile Photo
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        JPG, PNG or WebP. Max 5MB.
+                      </p>
                       {uploadingImage && (
-                        <p className="text-sm text-blue-500 mt-1">Uploading...</p>
+                        <p className="text-sm text-blue-500 mt-1">
+                          Uploading...
+                        </p>
                       )}
                     </div>
                   </div>
 
                   {/* Name */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Name</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Name
+                    </label>
                     <input
                       type="text"
                       placeholder="Your name"
@@ -274,20 +306,23 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
 
                   {/* Username */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Username</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Username
+                    </label>
                     <input
                       type="text"
                       placeholder="Your username"
                       value={profileData.username}
                       onChange={handleProfileChange("username")}
-                     className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     />
-                    
                   </div>
 
                   {/* Bio */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Bio</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Bio
+                    </label>
                     <textarea
                       placeholder="Tell people about yourself..."
                       value={profileData.bio}
@@ -296,7 +331,9 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       className="w-full px-3 py-2 border border  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <div className="flex justify-end text-sm">
-                      <span className="text-gray-500">{profileData.bio.length}/500</span>
+                      <span className="text-gray-500">
+                        {profileData.bio.length}/500
+                      </span>
                     </div>
                   </div>
 
@@ -315,14 +352,15 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
             {activeTab === "security" && (
               <div className="bg-white shadow-sm border ">
                 <div className="p-6 border-b ">
-                  <h2 className="text-xl font-semibold text-gray-900">Security Settings</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Security Settings
+                  </h2>
                   <p className="text-gray-600 mt-1">Manage your password</p>
                 </div>
 
-               
-                  <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
-  <h3 className="font-medium text-gray-900">Change Password</h3>
-              {passwordSuccess && (
+                <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
+                  <h3 className="font-medium text-gray-900">Change Password</h3>
+                  {passwordSuccess && (
                     <div className="text-green-600 px-4 py-3  text-sm bg-green-50">
                       Password updated successfully!
                     </div>
@@ -335,7 +373,9 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                   )}
                   {/* Current Password */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Current Password</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Current Password
+                    </label>
                     <div className="relative">
                       <input
                         type={showPasswords.old ? "text" : "password"}
@@ -345,17 +385,25 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPasswords(p => ({ ...p, old: !p.old }))}
+                        onClick={() =>
+                          setShowPasswords((p) => ({ ...p, old: !p.old }))
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        {showPasswords.old ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPasswords.old ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
                       </button>
                     </div>
                   </div>
 
                   {/* New Password */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">New Password</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      New Password
+                    </label>
                     <div className="relative">
                       <input
                         type={showPasswords.new ? "text" : "password"}
@@ -365,18 +413,28 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPasswords(p => ({ ...p, new: !p.new }))}
+                        onClick={() =>
+                          setShowPasswords((p) => ({ ...p, new: !p.new }))
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showPasswords.new ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500">6+ chars with uppercase, lowercase, number</p>
+                    <p className="text-xs text-gray-500">
+                      6+ chars with uppercase, lowercase, number
+                    </p>
                   </div>
 
                   {/* Confirm Password */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Confirm New Password
+                    </label>
                     <div className="relative">
                       <input
                         type={showPasswords.confirm ? "text" : "password"}
@@ -386,45 +444,63 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPasswords(p => ({ ...p, confirm: !p.confirm }))}
+                        onClick={() =>
+                          setShowPasswords((p) => ({
+                            ...p,
+                            confirm: !p.confirm,
+                          }))
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                                     {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
-
+                        {showPasswords.confirm ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
                       </button>
                     </div>
                   </div>
 
-                   <button
-    type="submit"
-    disabled={passwordLoading}
-    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
-  >
-    {passwordLoading ? "Updating..." : "Update Password"}
-  </button>
-  </form>
-                </div>
-              
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
+                  >
+                    {passwordLoading ? "Updating..." : "Update Password"}
+                  </button>
+                </form>
+              </div>
             )}
 
             {/* Notifications Tab */}
             {activeTab === "notifications" && (
               <div className="bg-white shadow-sm border">
                 <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold text-gray-900">Notifications</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Notifications
+                  </h2>
                 </div>
 
                 <div className="p-6 space-y-6">
                   <div className="flex items-center justify-between py-3">
                     <div>
-                      <h4 className="font-medium text-gray-900">Email notifications</h4>
-                      <p className="text-sm text-gray-600">Get notified when someone sends a message</p>
+                      <h4 className="font-medium text-gray-900">
+                        Email notifications
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        Get notified when someone sends a message
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={notifications.newFeedback}
-                        onChange={(e) => setNotifications(prev => ({ ...prev, newFeedback: e.target.checked }))}
+                        onChange={(e) =>
+                          setNotifications((prev) => ({
+                            ...prev,
+                            newFeedback: e.target.checked,
+                          }))
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -443,20 +519,26 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
             )}
 
             {/* Danger Zone Tab */}
-   {activeTab === "danger" && (
+            {activeTab === "danger" && (
               <div className="bg-white  shadow-sm border ">
                 <div className="p-6 border-b ">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
-                    <h2 className="text-xl font-semibold text-red-900">Delete Account</h2>
+                    <h2 className="text-xl font-semibold text-red-900">
+                      Delete Account
+                    </h2>
                   </div>
                   <p className="text-red-700 mt-1">Irreversible actions</p>
                 </div>
 
                 <div className="p-6">
                   <div className="border-2 border-red-200  p-6 bg-red-50 ">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Account</h3>
-                    <p className="text-gray-600 mb-4">This will permanently delete:</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Delete Account
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      This will permanently delete:
+                    </p>
                     <ul className="list-disc list-inside text-gray-600 space-y-1 mb-4">
                       <li>Your profile and personal information</li>
                       <li>All your feedback walls</li>
@@ -479,16 +561,19 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
       </div>
 
       {/* Delete Modal */}
-{showDeleteModal && (
+      {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="w-6 h-6 text-red-600" />
-              <h3 className="text-xl font-bold text-gray-900">Delete Account</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Delete Account
+              </h3>
             </div>
 
             <p className="text-gray-600 mb-4">
-              This action cannot be undone. All your data will be permanently deleted.
+              This action cannot be undone. All your data will be permanently
+              deleted.
             </p>
 
             <div className="space-y-4">
@@ -532,7 +617,11 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
               </button>
               <button
                 onClick={handleDeleteAccount}
-                disabled={!deletePassword || deleteConfirmText !== "DELETE" || deletionLoading}
+                disabled={
+                  !deletePassword ||
+                  deleteConfirmText !== "DELETE" ||
+                  deletionLoading
+                }
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400"
               >
                 {deletionLoading ? "Deleting..." : "Delete Account"}
@@ -543,7 +632,6 @@ const displayImage = previewImage || (profile?.profilePicture?.startsWith("http"
       )}
       <Footer />
     </div>
-
   );
 };
 
