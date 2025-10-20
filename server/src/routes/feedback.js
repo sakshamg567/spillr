@@ -11,8 +11,8 @@ import rateLimit from "express-rate-limit";
 const router = express.Router();
 
 const feedbackLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 10, // 10 feedback per 5 minutes
+  windowMs: 5 * 60 * 1000, 
+  max: 10, 
   message: { message: "Too many feedback submissions, please try again later" },
 });
 
@@ -154,8 +154,7 @@ router.post("/", feedbackLimiter, async (req, res) => {
 
       const mailOptions = {
         from: {
-          name: 'Spillr',
-          address: process.env.EMAIL_USER
+         from: `"Spillr" <${process.env.EMAIL_USER}>`,
         },
         to: owner.email,
         replyTo: process.env.EMAIL_USER,

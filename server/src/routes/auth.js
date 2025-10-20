@@ -428,7 +428,7 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
-// Verify reset token
+
 router.get("/verify-reset-token/:token", async (req, res) => {
   try {
     const { token } = req.params;
@@ -449,7 +449,7 @@ router.get("/verify-reset-token/:token", async (req, res) => {
   }
 });
 
-// Logout user
+
 router.post("/logout", (req, res) => {
   const config = getCookieConfig();
   res.clearCookie("token", config);

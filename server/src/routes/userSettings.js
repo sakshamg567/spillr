@@ -238,6 +238,11 @@ router.patch(
 
         updates.username = normalizedUsername;
 
+        await Wall.updateOne(
+    { ownerId: req.user.id },
+    { $set: { username: normalizedUsername } }
+  );
+
       }
 
       if (updates.bio !== undefined) {
