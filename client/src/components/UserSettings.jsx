@@ -20,6 +20,8 @@ import {
   Images,
 } from "lucide-react";
 import Footer from "./Footer";
+import { getImageUrl } from "../utils/imageHelper";
+
 
 const UserSettings = () => {
   const navigate = useNavigate();
@@ -96,33 +98,48 @@ const UserSettings = () => {
     setProfileData((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
-  const handleProfilePictureChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const handleProfilePictureChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      return;
-    }
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file');
+    return;
+  }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return;
-    }
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File size must be less than 5MB');
+    return;
+  }
 
-    const localPreview = URL.createObjectURL(file);
-    setPreviewImage(localPreview);
-    setUploadingImage(true);
+  if (previewImage) {
+    URL.revokeObjectURL(previewImage);
+  }
 
-    try {
-      await uploadProfilePicture(file);
-      await reloadProfile();
-       setPreviewImage(null);
-    } catch (err) {
-      console.error('Upload failed:', err);
-       setPreviewImage(null);
-    } finally {
-      setUploadingImage(false);
-    }
-  };
+  const localPreview = URL.createObjectURL(file);
+  setPreviewImage(localPreview);
+  setUploadingImage(true);
+
+  try {
+    const response = await uploadProfilePicture(file);
+    //console.log(' Upload response:', response);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await reloadProfile();
+    URL.revokeObjectURL(localPreview);
+    setPreviewImage(null);
+    alert('Profile picture updated successfully!');
+  } catch (err) {
+    alert('Failed to upload image: ' + err.message);
+    
+    URL.revokeObjectURL(localPreview);
+    setPreviewImage(null);
+  } finally {
+    setUploadingImage(false);
+  }
+};
+
+const displayImage = previewImage || 
+  (profile?.profilePicture ? `${getImageUrl(profile.profilePicture)}?t=${Date.now()}` : null);
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
@@ -163,23 +180,8 @@ const UserSettings = () => {
     } catch (err) {}
   };
 
-const displayImage = useMemo(() => {
-  if (uploadingImage && previewImage) {
-    return previewImage;
-  }
-  if (profile?.profilePicture) {
-    if (profile.profilePicture.startsWith('http')) {
-      return profile.profilePicture;
-    }
-    if (profile.profilePicture.startsWith('/uploads/')) {
-      const baseUrl = import.meta.env.VITE_API_BASE_URL;
-      return `${baseUrl}${profile.profilePicture}`;
-    }
-    return profile.profilePicture;
-  }
 
-  return null;
-}, [profile?.profilePicture, uploadingImage, previewImage]);
+
 
   return (
     <div

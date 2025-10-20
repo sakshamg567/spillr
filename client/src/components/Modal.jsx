@@ -32,4 +32,4 @@ const Modal = ({ children, onClose }) => {
     </AnimatePresence>
   );
 };
-export default Modal
+export default Modal;

@@ -13,9 +13,7 @@ export default function GlassNavbar() {
     !user
       ? { label: "Register", onClick: () => setAuthMode("register") }
       : { label: "Logout", onClick: logout },
-    !user
-      ? { label: "Login", onClick: () => setAuthMode("login") }
-      : null,
+    !user ? { label: "Login", onClick: () => setAuthMode("login") } : null,
   ].filter(Boolean);
 
   const updateIndicator = (label) => {
@@ -34,19 +32,15 @@ export default function GlassNavbar() {
 
   return (
     <nav className="relative flex items-center justify-center p-2 bg-white border border-black shadow-[6px_6px_0_0_#000]">
-
       <div className="relative flex items-center gap-2">
         {/* Active pill indicator */}
-    <div
-  className="absolute bottom-0 h-[4px] bg-black transition-all duration-700 ease-out"
-  style={{
-    width: indicatorStyle.width,
-    left: indicatorStyle.left,
-  }}
-/>
-
-
-
+        <div
+          className="absolute bottom-0 h-[4px] bg-black transition-all duration-700 ease-out"
+          style={{
+            width: indicatorStyle.width,
+            left: indicatorStyle.left,
+          }}
+        />
         {/* Nav items */}
         {items.map((item) => (
           <button
@@ -62,7 +56,8 @@ export default function GlassNavbar() {
               activeItem === item.label
                 ? "text-gray-600"
                 : "text-black hover:text-gray-600"
-            }`}style={{ fontFamily: "Space Grotesk" }}
+            }`}
+            style={{ fontFamily: "Space Grotesk" }}
           >
             {item.label}
           </button>

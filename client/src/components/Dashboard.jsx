@@ -28,13 +28,25 @@ export default function Navbar() {
   const getNavItems = (isLoggedIn) => {
     if (isLoggedIn) {
       return [
-        { label: "Messages", onClick: () => setActiveItem("Messages"), href: "#messages" },
-        { label: "Settings", onClick: () => navigate("/settings"), href: "#settings" },
+        {
+          label: "Messages",
+          onClick: () => setActiveItem("Messages"),
+          href: "#messages",
+        },
+        {
+          label: "Settings",
+          onClick: () => navigate("/settings"),
+          href: "#settings",
+        },
         { label: "Logout", onClick: logout, href: "#logout" },
       ];
     } else {
       return [
-        { label: "Register", onClick: () => setAuthMode("register"), href: "#register" },
+        {
+          label: "Register",
+          onClick: () => setAuthMode("register"),
+          href: "#register",
+        },
         { label: "Login", onClick: () => setAuthMode("login"), href: "#login" },
       ];
     }
@@ -57,7 +69,6 @@ export default function Navbar() {
 
           {/* Navigation */}
           <nav className="relative flex items-center gap-4">
-           
             <div
               className="absolute bottom-0 h-[4px] bg-black transition-all duration-700 ease-out"
               style={{
@@ -86,7 +97,6 @@ export default function Navbar() {
           </nav>
         </div>
       </header>
-
 
       <div className="pt-20">
         <Feedback />

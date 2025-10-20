@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import Modal from "./Modal";
 
 const Footer = () => {
   const [modalContent, setModalContent] = useState(null);
-  
+
   const privacyPolicy = () => {
     return (
       <div className="min-h-screen bg-yellow-200 flex items-center justify-center p-6">
@@ -18,14 +17,20 @@ const Footer = () => {
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 Definitions
               </h2>
-              <p>The feedback or opinion that a user gives to other users on our platform.</p>
+              <p>
+                The feedback or opinion that a user gives to other users on our
+                platform.
+              </p>
             </div>
 
             <div>
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 Information You Share
               </h2>
-              <p>Some services require registration and provide certain personal data.</p>
+              <p>
+                Some services require registration and provide certain personal
+                data.
+              </p>
             </div>
 
             <div>
@@ -46,7 +51,10 @@ const Footer = () => {
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 Opting Out
               </h2>
-              <p>You can adjust your browser to block cookies, but some features may not work.</p>
+              <p>
+                You can adjust your browser to block cookies, but some features
+                may not work.
+              </p>
             </div>
 
             <div>
@@ -87,35 +95,49 @@ const Footer = () => {
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 Introduction
               </h2>
-              <p>Welcome to Spillr. Please read these Terms and Conditions carefully before use.</p>
+              <p>
+                Welcome to Spillr. Please read these Terms and Conditions
+                carefully before use.
+              </p>
             </div>
 
             <div>
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 User Responsibilities
               </h2>
-              <p>Maintain confidentiality, provide truthful information, and use the platform ethically.</p>
+              <p>
+                Maintain confidentiality, provide truthful information, and use
+                the platform ethically.
+              </p>
             </div>
 
             <div>
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 Acceptable Use
               </h2>
-              <p>You must not violate laws, harass others, or post harmful content.</p>
+              <p>
+                You must not violate laws, harass others, or post harmful
+                content.
+              </p>
             </div>
 
             <div>
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 Content Guidelines
               </h2>
-              <p>No pornographic, violent, discriminatory, or infringing content.</p>
+              <p>
+                No pornographic, violent, discriminatory, or infringing content.
+              </p>
             </div>
 
             <div>
               <h2 className="text-2xl font-bold uppercase border-b-2 border-black inline-block mb-2">
                 Intellectual Property Rights
               </h2>
-              <p>All content belongs to Spillr or licensors. No unauthorized reproduction.</p>
+              <p>
+                All content belongs to Spillr or licensors. No unauthorized
+                reproduction.
+              </p>
             </div>
 
             <div>
@@ -123,7 +145,8 @@ const Footer = () => {
                 Disclaimers & Limitation of Liability
               </h2>
               <p>
-                The service is provided "as is" without warranties. We are not liable for indirect damages.
+                The service is provided "as is" without warranties. We are not
+                liable for indirect damages.
               </p>
             </div>
 
@@ -153,12 +176,17 @@ const Footer = () => {
   };
 
   const contactUs = (
-    <div className="max-w-3xl mx-auto p-8 border-2 border-black bg-yellow-200 shadow-[6px_6px_0_0_#000] space-y-6 font-mono text-black" style={{ fontFamily: "Space Grotesk" }}>
+    <div
+      className="max-w-3xl mx-auto p-8 border-2 border-black bg-yellow-200 shadow-[6px_6px_0_0_#000] space-y-6 font-mono text-black"
+      style={{ fontFamily: "Space Grotesk" }}
+    >
       <h1 className="text-4xl font-extrabold uppercase tracking-tight border-b-2 border-black pb-2">
         Contact Us
       </h1>
 
-      <p className="text-sm uppercase text-gray-700">We'd love to hear from you</p>
+      <p className="text-sm uppercase text-gray-700">
+        We'd love to hear from you
+      </p>
 
       <div className="space-y-2">
         <p className="text-lg">
@@ -180,11 +208,22 @@ const Footer = () => {
 
   return (
     <footer className="w-full mt-auto">
-      <div className="w-full mx-auto px-4 sm:px-6 py-8 text-gray-100 bg-black" style={{ fontFamily: "Space Grotesk" }}>
+      <div
+        className="w-full mx-auto px-4 sm:px-6 py-8 text-gray-100 bg-black"
+        style={{ fontFamily: "Space Grotesk" }}
+      >
         {/* Footer Top */}
         <div className="flex flex-col md:flex-row justify-between items-start gap-6 md:gap-0">
-          <div className="flex flex-col space-y-2" style={{ fontFamily: "Space Grotesk" }}>
-            <h2 className="text-xl font-bold" style={{ fontFamily: "Space Grotesk" }}>Spillr</h2>
+          <div
+            className="flex flex-col space-y-2"
+            style={{ fontFamily: "Space Grotesk" }}
+          >
+            <h2
+              className="text-xl font-bold"
+              style={{ fontFamily: "Space Grotesk" }}
+            >
+              Spillr
+            </h2>
             <p className="text-sm text-gray-400 max-w-xs">
               Share and receive anonymous feedback with ease and privacy.
             </p>

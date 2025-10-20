@@ -1,42 +1,42 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useUser } from "../hooks/useUser";
 import { useAuth } from "../hooks/useAuth";
-import { FaCheckCircle, FaEdit, FaShareAlt } from "react-icons/fa";
+import { FaCheckCircle, FaShareAlt } from "react-icons/fa";
 import { getImageUrl, getInitials } from "../utils/imageHelper";
 
 const ProfileCard = () => {
-  const { profile, loading, updateProfile, isOperationPending } = useUser();
+  const { profile, loading, updateProfile } = useUser();
   const { user } = useAuth();
-
   const userName = profile?.name || user?.name || "User";
+  const [imageKey, setImageKey] = useState(Date.now());
 
   const sharedLink = useMemo(() => {
     const username = profile?.username || user?.username;
     if (!username) return window.location.origin;
-
     return `${window.location.origin}/wall/${username}`;
   }, [profile?.username, user?.username]);
+
   const avatarUrl = useMemo(() => {
-    if (profile?.avatarUrl) return getImageUrl(profile.avatarUrl);
-    if (profile?.profilePicture) return getImageUrl(profile.profilePicture);
-    if (user?.avatarUrl) return getImageUrl(user.avatarUrl);
-    return null;
-  }, [profile?.avatarUrl, profile?.profilePicture, user?.avatarUrl]);
+    const imagePath = profile?.profilePicture || user?.profilePicture;
+    if (!imagePath) return null;
+
+    const baseUrl = getImageUrl(imagePath);
+    return baseUrl;
+  }, [profile?.profilePicture, user?.profilePicture]);
 
   const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    if (profile) {
-      setImageError(false);
-    }
-  }, [profile]);
-
+  const [copySuccess, setCopySuccess] = useState(false);
   const isVerified = profile?.isVerified || false;
+
+  React.useEffect(() => {
+    setImageError(false);
+    setImageKey(Date.now());
+  }, [avatarUrl]);
+
   const userBio = profile?.bio || "";
 
   const [isEditing, setIsEditing] = useState(false);
   const [tempBio, setTempBio] = useState(userBio);
-  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     setTempBio(userBio);
@@ -75,37 +75,53 @@ const ProfileCard = () => {
 
   return (
     <div className="w-full border-2 border-black  ">
-      <div className="flex items-center justify-center w-56 h-56 bg-gray-100 overflow-hidden mx-auto rounded-md border border-black mt-4">
+      <div
+        className="flex items-center justify-center w-56 h-56 bg-gray-100 overflow-hidden mx-auto rounded-md border border-black mt-4"
+        style={{ fontFamily: "Space Grotesk" }}
+      >
         {avatarUrl && !imageError ? (
           <img
-            src={avatarUrl}
+            key={avatarUrl}
+            src={`${avatarUrl}?v=${imageKey}`}
             alt={`${userName}'s avatar`}
             className="object-cover w-full h-full"
-            loading="lazy"
+            loading="eager"
             onError={(e) => {
-              console.error("Image failed to load:", e.target.src);
+              //console.error("Image failed to load:", e.target.src);
               setImageError(true);
+            }}
+            onLoad={() => {
+              //console.log('Image loaded successfully');
             }}
           />
         ) : (
-          <span className="text-4xl font-bold text-gray-700">
+          <span
+            className="text-4xl font-bold text-gray-700"
+            style={{ fontFamily: "Space Grotesk" }}
+          >
             {getInitials(userName)}
           </span>
         )}
       </div>
 
-      {/* Card Body — ALL CENTERED */}
       <div className="p-3 space-y-3 text-center">
-        <div className="flex items-center justify-center gap-1">
+        <div className="flex flex-col items-center justify-center gap-1">
           <h3
             className="font-bold text-base text-gray-900"
             style={{ fontFamily: "Space Grotesk" }}
           >
-            {userName}
+            {userName} 
           </h3>
-          {isVerified && <FaCheckCircle className="h-4 w-4 text-blue-500" />}
+          <span className="text-sm text-gray-500">
+            @{profile?.username || user?.username || "username"}{" "}
+          </span>
+          {isVerified && (
+            <FaCheckCircle className="h-4 w-4 text-blue-500 mt-1" />
+          )}
         </div>
-        {/* Centered action buttons */}
+        {profile?.bio && <p className="text-md text-gray-700">{profile.bio}</p>}
+
+
         <div className="pt-2 border-t border-gray-200 flex flex-row justify-center gap-4">
           <button
             onClick={handleShareLink}

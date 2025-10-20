@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect,useRef }from 'react' 
 import { userService } from '../services/userService.js';
 
 export const useUser = (autoFetch = true) => {
@@ -9,17 +9,11 @@ export const useUser = (autoFetch = true) => {
 
   const isFetchingRef = useRef(false);
   const hasInitializedRef = useRef(false);
-  const hasFetchedRef = useRef(false); 
+
 
   const fetchProfile = useCallback(async (force = false) => {
-
-    if (hasFetchedRef.current && !force) {
-      console.log(' Skipping fetchProfile - already fetched');
-      return profile;
-    }
-    
-    if ((isFetchingRef.current || isOperationPending) && !force) {
-      console.log('Skipping fetchProfile - already in progress');
+    if (isFetchingRef.current && !force) {
+      console.log('⏭️ Skipping fetchProfile - already in progress');
       return;
     }
     
@@ -29,19 +23,20 @@ export const useUser = (autoFetch = true) => {
     setError(null);
 
     try {
+      //console.log(' Fetching fresh profile data...');
       const userData = await userService.getProfile();
+     // console.log('Profile fetched:', userData);
       setProfile(userData);
-      hasFetchedRef.current = true; 
       return userData;
     } catch (err) {
       setError(err.message || 'Failed to load profile');
-      console.error('fetchProfile error:', err);
+      //console.error(' fetchProfile error:', err);
     } finally {
       setLoading(false);
       setIsOperationPending(false);
       isFetchingRef.current = false;
     }
-  }, [isOperationPending, profile]); // Added profile to deps
+  }, []);
 
   const updateProfile = useCallback(async (profileData) => {
     if (isOperationPending) return;
@@ -62,6 +57,7 @@ export const useUser = (autoFetch = true) => {
     }
   }, [isOperationPending]);
 
+
   const uploadProfilePicture = useCallback(async (file) => {
     if (isOperationPending) return;
     setIsOperationPending(true);
@@ -70,7 +66,9 @@ export const useUser = (autoFetch = true) => {
 
     try {
       const response = await userService.uploadProfilePicture(file);
-      setProfile(prev => prev ? { ...prev, profilePicture: response.profilePicture } : null);
+      const freshProfile = await userService.getProfile();
+      setProfile(freshProfile);
+      
       return response;
     } catch (err) {
       setError(err.message || 'Failed to upload picture');
@@ -105,7 +103,7 @@ export const useUser = (autoFetch = true) => {
       hasInitializedRef.current = true;
       fetchProfile();
     }
-  }, [autoFetch]); 
+  }, [autoFetch, fetchProfile]);
 
   const clearError = useCallback(() => setError(null), []);
 
@@ -121,6 +119,7 @@ export const useUser = (autoFetch = true) => {
     clearError
   };
 };
+
 
 
 export const usePasswordChange = () => {

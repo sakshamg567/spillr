@@ -1,4 +1,4 @@
-import { useState,useEffect,useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useOwnerFeedback, useFeedbackAnswer } from "../hooks/useFeedback";
 import toast from "react-hot-toast";
@@ -9,14 +9,13 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import ProfileCard from "./ProfileCard";
 
 export default function FeedbackManagement() {
   const { user } = useAuth();
   const feedbackIdentifier = user?.username || user?.slug;
-
 
   const {
     feedbacks,
@@ -27,7 +26,7 @@ export default function FeedbackManagement() {
     stats,
     updateFilters,
     changePage,
-     refetch,
+    refetch,
   } = useOwnerFeedback(feedbackIdentifier);
 
   const {
@@ -40,27 +39,27 @@ export default function FeedbackManagement() {
   } = useFeedbackAnswer();
 
   const [showAnswerForm, setShowAnswerForm] = useState(null);
-   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date());
 
- useEffect(() => {
-  let intervalId = null;
-  if (filters.sort === 'active') {
-    intervalId = setInterval(() => {
-      refetch(); 
-    }, 30000);
-  }
-  return () => {
-    if (intervalId) clearInterval(intervalId);
-  };
-}, [filters.sort]); 
- const handleManualRefresh = useCallback(async () => {
+  useEffect(() => {
+    let intervalId = null;
+    if (filters.sort === "active") {
+      intervalId = setInterval(() => {
+        refetch();
+      }, 30000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [filters.sort]);
+  const handleManualRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
       await refetch();
       setLastUpdate(new Date());
     } catch (err) {
-      toast.error('Failed to refresh');
+      toast.error("Failed to refresh");
     } finally {
       setIsRefreshing(false);
     }
@@ -87,7 +86,6 @@ export default function FeedbackManagement() {
         </span>
       );
 
-
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold bg-yellow-100 border border-black text-black">
         <Clock className="w-3 h-3" />
@@ -96,16 +94,15 @@ export default function FeedbackManagement() {
     );
   };
 
- if (loading && !feedbacks.length)
-  return (
-    <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+  if (loading && !feedbacks.length)
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-foreground border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-  );
-
+    );
 
   if (error)
     return (
@@ -128,67 +125,72 @@ export default function FeedbackManagement() {
       </div>
     );
 
-  
   return (
-<div className="min-h-screen" >
-  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-3 py-4 sm:px-4">
-    
-    {/* LEFT SIDEBAR */}
-    <aside className="lg:col-span-3 w-full ">
-      <div className="lg:sticky lg:top-20 w-full ">
-        <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden w-full flex  flex-col p-3 sm:p-5 lg:p-6">
-          
-          {/* Profile Card */}
-          <div className="mb-6 ">
+    <div className="min-h-screen">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-3 py-4 sm:px-4">
+        {/* LEFT SIDEBAR */}
+        <aside className="lg:col-span-3 w-full ">
+          <div className="lg:sticky lg:top-20 w-full ">
+            <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden w-full flex  flex-col p-3 sm:p-5 lg:p-6">
+              {/* Profile Card */}
+              <div className="mb-6 ">
+                <ProfileCard />
+              </div>
 
-            <ProfileCard />
+              {/* Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-3">
+                <div className="p-3 border-2 border-black bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-semibold">
+                      Total
+                    </span>
+                    <span className="text-base sm:text-lg font-bold">
+                      {stats?.total ?? 0}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 border-2 border-black bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-semibold">
+                      Answered
+                    </span>
+                    <span className="text-base sm:text-lg font-bold">
+                      {stats?.answered ?? 0}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 border-2 border-black bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-semibold">
+                      Pending
+                    </span>
+                    <span className="text-base sm:text-lg font-bold">
+                      {stats?.active ?? 0}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-3 border-2 border-black bg-white">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm font-semibold">
+                      Answer rate
+                    </span>
+                    <span className="text-base sm:text-lg font-bold">
+                      {Math.round((stats?.answerRate || 0) * 100) / 100}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+        </aside>
 
-          {/* Stats */} 
-          <div className="grid grid-cols-2 sm:grid-cols-1 gap-2 sm:gap-3">
-            <div className="p-3 border-2 border-black bg-white">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold">Total</span>
-                <span className="text-base sm:text-lg font-bold">{stats?.total ?? 0}</span>
-              </div>
-            </div>
-            <div className="p-3 border-2 border-black bg-white">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold">Answered</span>
-                <span className="text-base sm:text-lg font-bold">{stats?.answered ?? 0}</span>
-              </div>
-            </div>
-            <div className="p-3 border-2 border-black bg-white">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold">Pending</span>
-                <span className="text-base sm:text-lg font-bold">{stats?.active ?? 0}</span>
-              </div>
-            </div>
-            <div className="p-3 border-2 border-black bg-white">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold">Answer rate</span>
-                <span className="text-base sm:text-lg font-bold">
-                  {Math.round((stats?.answerRate || 0) * 100) / 100}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-
-        </div>
-      </div>
-    </aside>
-
-        
         <main className="lg:col-span-9">
           <div className="border-2 border-black shadow-[6px_6px_0_0_#000] bg-white overflow-hidden">
             {/* Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-6 border-b-2 border-black gap-4">
               <div className="min-w-0">
                 <h1 className="text-xl sm:text-2xl font-extrabold">Messages</h1>
-                <p className="text-xs sm:text-sm text-gray-600">
-                  
-                </p>
+                <p className="text-xs sm:text-sm text-gray-600"></p>
               </div>
 
               {/* Filters */}
@@ -219,7 +221,9 @@ export default function FeedbackManagement() {
                   className="p-2 border-2 border-black bg-white hover:bg-gray-50 disabled:opacity-50"
                   title="Refresh now"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+                  />
                 </button>
               </div>
             </div>
@@ -264,9 +268,11 @@ export default function FeedbackManagement() {
                           </div>
 
                           {/* Question */}
-                         <div className="bg-gray-50 sm:px-4 sm:py-2">
-  <p className="text-sm sm:text-base text-gray-900">{feedback.question}</p>
-</div>
+                          <div className="bg-gray-50 sm:px-4 sm:py-2">
+                            <p className="text-sm sm:text-base text-gray-900">
+                              {feedback.question}
+                            </p>
+                          </div>
 
                           {/* Answer */}
                           {feedback.answer && (
@@ -344,30 +350,38 @@ export default function FeedbackManagement() {
                   {/* Pagination */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mt-4 sm:mt-6">
                     <div className="text-xs sm:text-sm text-gray-600">
-  Showing page {filters.page} of {pagination?.totalPages ?? 1}
-</div>
+                      Showing page {filters.page} of{" "}
+                      {pagination?.totalPages ?? 1}
+                    </div>
 
-<div className="flex gap-2">
-<button
-  onClick={() => changePage(Math.max(1, filters.page - 1))}
-  disabled={filters.page <= 1}
-  className="p-2 border-2 border-black bg-white"
->
-  <ChevronLeft className="w-4 h-4" />
-</button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          changePage(Math.max(1, filters.page - 1))
+                        }
+                        disabled={filters.page <= 1}
+                        className="p-2 border-2 border-black bg-white"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
 
-<button
-  onClick={() => changePage(Math.min(pagination?.totalPages ?? 1, filters.page + 1))}
-  disabled={filters.page >= (pagination?.totalPages ?? 1)}
-  className="p-2 border-2 border-black bg-white"
->
-  <ChevronRight className="w-4 h-4" />
-</button>
-</div>
-
+                      <button
+                        onClick={() =>
+                          changePage(
+                            Math.min(
+                              pagination?.totalPages ?? 1,
+                              filters.page + 1
+                            )
+                          )
+                        }
+                        disabled={filters.page >= (pagination?.totalPages ?? 1)}
+                        className="p-2 border-2 border-black bg-white"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                
+                </div>
               )}
             </div>{" "}
           </div>

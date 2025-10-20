@@ -2,8 +2,13 @@ export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
 
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
+    const url = new URL(imagePath);
+    url.searchParams.delete('t');
+    const cleanUrl = url.origin + url.pathname;
+   // console.log(' Returning Cloudinary URL:', cleanUrl);
+    return cleanUrl;
   }
+  
 
   if (imagePath.includes('cloudinary.com')) {
     return imagePath;
@@ -14,10 +19,13 @@ export const getImageUrl = (imagePath) => {
     return `${baseUrl}${imagePath}`;
   }
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL;
-  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `${baseUrl}${cleanPath}`;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  const cleanPath = imagePath.replace(/^\/+/, '');
+  const finalUrl = `${baseUrl}/${cleanPath}`;
+  //console.log('Returning local URL:', finalUrl);
+  return finalUrl;
 };
+
 export const getInitials = (name) => {
   if (!name) return '?';
   
@@ -39,6 +47,7 @@ export const isValidImageUrl = (url) => {
   );
 };
 
+
 export const createPreviewUrl = (file) => {
   if (!file) return null;
   try {
@@ -54,7 +63,7 @@ export const revokePreviewUrl = (url) => {
     try {
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to revoke preview URL:', error);
+      //console.error('Failed to revoke preview URL:', error);
     }
   }
 };
