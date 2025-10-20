@@ -87,7 +87,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Push content below fixed header */}
+
       <div className="pt-20">
         <Feedback />
       </div>

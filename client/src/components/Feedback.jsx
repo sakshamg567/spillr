@@ -133,7 +133,7 @@ export default function FeedbackManagement() {
       </div>
     );
 
-  // main layout
+  
   return (
 <div className="min-h-screen" >
   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 px-3 py-4 sm:px-4">
@@ -375,7 +375,6 @@ export default function FeedbackManagement() {
                 
               )}
             </div>{" "}
-            {/* /.p-6 */}
           </div>
         </main>
       </div>
