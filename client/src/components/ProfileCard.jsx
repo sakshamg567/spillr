@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useUser } from "../hooks/useUser";
 import { useAuth } from "../hooks/useAuth";
 import { FaCheckCircle, FaEdit, FaShareAlt } from "react-icons/fa";
+import { getImageUrl, getInitials } from "../utils/imageHelper";
+
 
 const ProfileCard = () => {
   const { profile, loading, updateProfile, isOperationPending } = useUser();
@@ -16,14 +18,15 @@ const ProfileCard = () => {
       : window.location.origin;
   }, [profile?.username, user?.username]);
 
-  const avatarUrl = useMemo(() => {
-    if (profile?.avatarUrl) return profile.avatarUrl;
-    if (profile?.profilePicture)
-      return profile.profilePicture.startsWith("http")
-        ? profile.profilePicture
-        : `${import.meta.env.VITE_API_BASE_URL}${profile.profilePicture}`;
-    return user?.avatarUrl || null;
-  }, [profile?.avatarUrl, profile?.profilePicture, user?.avatarUrl]);
+const avatarUrl = useMemo(() => {
+  if (profile?.avatarUrl) return getImageUrl(profile.avatarUrl);
+  if (profile?.profilePicture) return getImageUrl(profile.profilePicture);
+  if (user?.avatarUrl) return getImageUrl(user.avatarUrl);
+  return null;
+}, [profile?.avatarUrl, profile?.profilePicture, user?.avatarUrl]);
+
+
+  const [imageError, setImageError] = useState(false);
 
   const isVerified = profile?.isVerified || false;
   const userBio = profile?.bio || "";
@@ -68,17 +71,21 @@ const ProfileCard = () => {
     <div className="w-full border-2 border-black  ">
      
 <div className="flex items-center justify-center w-56 h-56 bg-gray-100 overflow-hidden mx-auto rounded-md border border-black mt-4">
-  {avatarUrl ? (
+  {avatarUrl && !imageError ? (
     <img
       src={avatarUrl}
       alt={`${userName}'s avatar`}
-      className="object-cover w-full h-full "
+      className="object-cover w-full h-full"
       loading="lazy"
+      onError={(e) => {
+        console.error('Image failed to load:', e.target.src);
+        setImageError(true);
+      }}
     />
   ) : (
     <span className="text-4xl font-bold text-gray-700">
-      {userName[0]?.toUpperCase()}
-    </span>
+      {getInitials(userName)}
+      </span>
   )}
 </div>
 

@@ -387,7 +387,9 @@ router.patch(
         return res.status(404).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
       }
 
-      await deleteOldProfilePicture(oldProfilePicture);
+      deleteOldProfilePicture(oldProfilePicture).catch(err => {
+        console.error("Failed to delete old profile picture:", err);
+      });
 
       res.json({
         message: "Profile picture updated successfully",

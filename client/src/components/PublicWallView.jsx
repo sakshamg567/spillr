@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Send, MessageCircle, RefreshCw } from "lucide-react";
 import Footer from "./Footer";
 import { useAuth } from "../hooks/useAuth";
+import { getImageUrl, getInitials } from "../utils/imageHelper";
 
 const PublicWallView = ({ logout }) => {
   const { user, isAuthenticated } = useAuth();
@@ -23,6 +24,7 @@ const PublicWallView = ({ logout }) => {
     isAuthenticated ? "Dashboard" : "Register"
   );
   const [indicatorStyle, setIndicatorStyle] = useState({ width: 0, left: 0 });
+  const [imageError, setImageError] = useState(false);
   const navRefs = useRef({});
 
   const updateIndicator = (label) => {
@@ -68,7 +70,7 @@ const PublicWallView = ({ logout }) => {
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-  // FIXED: Separate fetch functions with better error handling
+  
   const fetchUserProfile = useCallback(async () => {
     if (!slug) return;
     
@@ -187,7 +189,7 @@ const PublicWallView = ({ logout }) => {
       setSent(true);
       setFormData({ question: "" });
       
-      // Refresh feedback after submission (answer might appear)
+     
       setTimeout(() => {
         fetchAnsweredFeedback();
       }, 2000);
@@ -287,23 +289,20 @@ const PublicWallView = ({ logout }) => {
         <div className="border-4 border-black bg-white p-10 shadow-[8px_8px_0_0_#000]">
           <div className="flex flex-col items-center text-center">
             <div className="w-32 h-32 border-4 border-black bg-yellow-100 flex items-center justify-center mb-4 shadow-[4px_4px_0_0_#000]">
-              {userProfile?.profilePicture ? (
-                <img
-                  src={
-                    userProfile.profilePicture?.startsWith("http")
-                      ? userProfile.profilePicture
-                      : `${API_BASE_URL}/${userProfile.profilePicture.replace(
-                          /^\/+/,
-                          ""
-                        )}`
-                  }
-                  alt={userProfile.name || "Profile picture"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-4xl font-extrabold">
-                  {userProfile?.name?.[0]?.toUpperCase() || "U"}
-                </span>
+  {userProfile?.profilePicture && !imageError ? (
+    <img
+      src={getImageUrl(userProfile.profilePicture)}
+      alt={userProfile.name || 'Profile picture'}
+      className="w-full h-full object-cover"
+      onError={() => {
+        console.error('Public wall image failed to load');
+        setImageError(true);
+      }}
+    />
+  ) : (
+    <span className="text-4xl font-extrabold">
+      {getInitials(userProfile?.name || 'User')}
+    </span>
               )}
             </div>
 
