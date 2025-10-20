@@ -2,11 +2,9 @@ import Wall from "../models/Wall.js";
 import User from "../models/User.js";
 import Feedback from "../models/Feedback.js";
 
-
 const generateUniqueSlug = async (baseSlug) => {
   let slug = baseSlug.toLowerCase();
   
- 
   if (!slug || slug.length < 3) {
     slug = `user${Date.now()}`.substring(0, 15);
   }
@@ -14,7 +12,6 @@ const generateUniqueSlug = async (baseSlug) => {
   let counter = 1;
   let uniqueSlug = slug;
   
-
   while (await Wall.findOne({ slug: uniqueSlug })) {
     uniqueSlug = `${slug}${counter}`;
     counter++;
@@ -23,23 +20,19 @@ const generateUniqueSlug = async (baseSlug) => {
   return uniqueSlug;
 };
 
-
 export const createWallForUser = async (userId, username, name) => {
   try {
-   
     const existingWall = await Wall.findOne({ ownerId: userId });
     if (existingWall) {
-      console.log(`Wall already exists for user ${userId}: ${existingWall.slug}`);
+      console.log(` Wall already exists for user ${userId}: ${existingWall.slug}`);
       return { success: true, wall: existingWall, alreadyExists: true };
     }
 
- 
     const slug = await generateUniqueSlug(username);
-    
     
     const wall = await Wall.create({
       ownerId: userId, 
-       username: username, 
+      username: username, 
       slug: slug,
       title: `${name}'s Wall`,
       description: 'Share your thoughts anonymously!',
@@ -55,7 +48,7 @@ export const createWallForUser = async (userId, username, name) => {
     console.log(`Wall created successfully for user ${userId}: ${slug}`);
     return { success: true, wall };
   } catch (error) {
-    console.error('Failed to create wall:', error);
+    console.error(' Failed to create wall:', error);
     return { 
       success: false, 
       error: error.message,
@@ -68,39 +61,28 @@ export const getPublicWall = async (req, res) => {
   const { slug } = req.params;
 
   if (!slug) {
-    return res.status(400).json({ error: "Slug required" });
+    return res.status(400).json({ error: "Username or slug required" });
   }
 
   try {
-    const wall = await Wall.findOne({ username: slug.toLowerCase() })
+    const normalizedSlug = slug.toLowerCase().trim();
+    
+
+    let wall = await Wall.findOne({ username: normalizedSlug })
       .populate("ownerId", "name username bio profilePicture socialLinks")
       .select("slug customColors theme")
       .lean();
     
+  
     if (!wall) {
-      const wallBySlug = await Wall.findOne({ slug: slug.toLowerCase() })
+      wall = await Wall.findOne({ slug: normalizedSlug })
         .populate("ownerId", "name username bio profilePicture socialLinks")
         .select("slug customColors theme")
         .lean();
-      
-      if (!wallBySlug) {
-        return res.status(404).json({ error: "Wall not found" });
-      }
-      
-      return res.json({
-        name: wallBySlug.ownerId.name,
-        username: wallBySlug.ownerId.username,
-        bio: wallBySlug.ownerId.bio || '',
-        profilePicture: wallBySlug.ownerId.profilePicture || null,
-        socialLinks: wallBySlug.ownerId.socialLinks || [],
-        slug: wallBySlug.slug,
-        customColors: wallBySlug.customColors || {
-          primary: '#000000',
-          secondary: '#ffffff',
-          accent: '#3b82f6',
-        },
-        theme: wallBySlug.theme || 'light',
-      });
+    }
+    
+    if (!wall) {
+      return res.status(404).json({ error: "Wall not found" });
     }
 
     if (!wall.ownerId) {
@@ -124,7 +106,7 @@ export const getPublicWall = async (req, res) => {
 
     res.json(publicWallData);
   } catch (err) {
-    console.error("Get public wall error:", err);
+    console.error(" Get public wall error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -133,9 +115,14 @@ export const getPublicFeedback = async (req, res) => {
   const { slug } = req.params;
   
   try {
-    let wall = await Wall.findOne({ slug: slug.toLowerCase() })
-      .select("_id")
-      .lean();
+    const normalizedSlug = slug.toLowerCase().trim();
+    
+    let wall = await Wall.findOne({ 
+      $or: [
+        { username: normalizedSlug },
+        { slug: normalizedSlug }
+      ]
+    }).select("_id").lean();
 
     if (!wall) {
       return res.status(404).json({ error: "Wall not found" });
@@ -153,11 +140,10 @@ export const getPublicFeedback = async (req, res) => {
 
     res.json({ feedbacks });
   } catch (err) {
-    console.error("Get public feedback error:", err);
+    console.error(" Get public feedback error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 export const submitFeedback = async (req, res) => {
   const { slug } = req.params;
@@ -168,7 +154,14 @@ export const submitFeedback = async (req, res) => {
   }
 
   try {
-    const wall = await Wall.findOne({ slug: slug.toLowerCase() });
+    const normalizedSlug = slug.toLowerCase().trim();
+    
+    const wall = await Wall.findOne({
+      $or: [
+        { username: normalizedSlug },
+        { slug: normalizedSlug }
+      ]
+    });
 
     if (!wall) {
       return res.status(404).json({ error: "Wall not found" });
@@ -192,7 +185,7 @@ export const submitFeedback = async (req, res) => {
       feedbackId: feedback._id 
     });
   } catch (err) {
-    console.error("Submit feedback error:", err);
+    console.error(" Submit feedback error:", err);
     res.status(500).json({ error: "Failed to submit feedback" });
   }
 };

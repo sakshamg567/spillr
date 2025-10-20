@@ -20,21 +20,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const uploadDir = path.join(__dirname, "..", "uploads");
 
-const useCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && 
-                          process.env.CLOUDINARY_API_KEY && 
-                          process.env.CLOUDINARY_API_SECRET);
+const useCloudinary = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
 
 if (!useCloudinary && !fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
-  console.log(' Using local file storage (Cloudinary not configured)');
-  console.log('   Files will be lost on container restart!');
+  console.log(" Using local file storage (Cloudinary not configured)");
+  console.log("   Files will be lost on container restart!");
 }
-
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
 const access = promisify(fs.access);
-
 
 const profileUpdateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -50,7 +50,6 @@ const passwordChangeLimiter = rateLimit({
   },
 });
 
-
 const accountDeletionLimiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000,
   max: 3,
@@ -60,7 +59,6 @@ const accountDeletionLimiter = rateLimit({
 });
 
 const validateObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
-
 
 const validatePassword = (password) => {
   return (
@@ -142,25 +140,27 @@ const ERROR_MESSAGES = {
 };
 const deleteOldProfilePicture = async (oldProfilePicture) => {
   if (!oldProfilePicture) return;
-  if (oldProfilePicture.includes('cloudinary.com')) {
+  if (oldProfilePicture.includes("cloudinary.com")) {
     try {
-      const urlParts = oldProfilePicture.split('/upload/');
+      const urlParts = oldProfilePicture.split("/upload/");
       if (urlParts.length > 1) {
         const pathAfterUpload = urlParts[1];
-        const pathParts = pathAfterUpload.split('/');
+        const pathParts = pathAfterUpload.split("/");
         const fileWithExt = pathParts[pathParts.length - 1];
-        const publicId = `spillr/profile-pictures/${fileWithExt.split('.')[0]}`;
-        
+        const publicId = `spillr/profile-pictures/${fileWithExt.split(".")[0]}`;
+
         await cloudinary.uploader.destroy(publicId);
         console.log("Old Cloudinary image deleted:", publicId);
       }
     } catch (error) {
       console.error("Failed to delete old Cloudinary image:", error.message);
     }
-  }
-  else if (oldProfilePicture.startsWith("/uploads/")) {
+  } else if (oldProfilePicture.startsWith("/uploads/")) {
     try {
-      const oldFilePath = path.join(uploadDir, path.basename(oldProfilePicture));
+      const oldFilePath = path.join(
+        uploadDir,
+        path.basename(oldProfilePicture)
+      );
       await access(oldFilePath, F_OK);
       await unlink(oldFilePath);
       console.log("Old local file deleted");
@@ -219,12 +219,10 @@ router.patch(
         const normalizedUsername = updates.username.trim().toLowerCase();
 
         if (!validateUsername(normalizedUsername)) {
-          return res
-            .status(400)
-            .json({
-              message:
-                "Username must be 3-30 characters with letters, numbers, and underscores",
-            });
+          return res.status(400).json({
+            message:
+              "Username must be 3-30 characters with letters, numbers, and underscores",
+          });
         }
 
         const existingUser = await User.findOne({
@@ -239,10 +237,9 @@ router.patch(
         updates.username = normalizedUsername;
 
         await Wall.updateOne(
-    { ownerId: req.user.id },
-    { $set: { username: normalizedUsername } }
-  );
-
+          { ownerId: req.user.id },
+          { $set: { username: normalizedUsername } }
+        );
       }
 
       if (updates.bio !== undefined) {
@@ -309,7 +306,6 @@ router.patch(
   profileUpdateLimiter,
   upload.single("profilePic"),
   async (req, res) => {
-   
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -324,47 +320,61 @@ router.patch(
 
       let profilePictureUrl;
 
-      if (useCloudinary) {
+      if (useCloudinary || process.env.NODE_ENV === "production") {
         try {
-          console.log(' Uploading to Cloudinary...');
-          
-          const uploadPromise = new Promise((resolve, reject) => {
+          console.log("📤 Uploading to Cloudinary...");
+
+          const currentUser = await User.findById(req.user.id).select(
+            "profilePicture"
+          );
+          if (currentUser?.profilePicture?.includes("cloudinary.com")) {
+            await deleteOldProfilePicture(currentUser.profilePicture);
+          }
+
+          const uploadResult = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
               {
-                folder: 'spillr/profile-pictures',
+                folder: "spillr/profile-pictures",
                 public_id: `user-${req.user.id}-${Date.now()}`,
                 transformation: [
-                  { width: 500, height: 500, crop: 'fill', gravity: 'face' },
-                  { quality: 'auto:good', fetch_format: 'auto' }
+                  { width: 500, height: 500, crop: "fill", gravity: "face" },
+                  { quality: "auto:good", fetch_format: "auto" },
                 ],
                 overwrite: true,
+                resource_type: "image",
+                invalidate: true,
               },
               (error, result) => {
                 if (error) {
-                  console.error('Cloudinary upload error:', error);
+                  console.error("Cloudinary upload error:", error);
                   reject(error);
                 } else {
+                  console.log("Cloudinary upload successful");
                   resolve(result);
                 }
               }
             );
-            
+
             uploadStream.end(req.file.buffer);
           });
 
-          const uploadResult = await uploadPromise;
           profilePictureUrl = uploadResult.secure_url;
-          
           console.log("Uploaded to Cloudinary:", profilePictureUrl);
         } catch (cloudinaryError) {
           console.error("Cloudinary upload failed:", cloudinaryError);
-          throw new Error("Failed to upload image to cloud storage");
+
+          if (process.env.NODE_ENV === "production") {
+            return res.status(500).json({
+              message: "Failed to upload image. Please try again.",
+            });
+          }
+
+          throw cloudinaryError;
         }
-      } 
-    
-      else {
-        console.log('Using local file storage (Cloudinary not configured)');
-        
+      }
+      if (!profilePictureUrl && process.env.NODE_ENV !== "production") {
+        console.log(" Using local file storage (development only)");
+
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
         const sanitizedOriginal = sanitizeFilename(req.file.originalname);
         const filename = `user-${req.user.id}-${uniqueSuffix}-${sanitizedOriginal}`;
@@ -372,41 +382,42 @@ router.patch(
 
         await writeFile(filepath, req.file.buffer);
         profilePictureUrl = `/uploads/${filename}`;
-        
-        console.log(" Saved locally:", filename);
-      }
-      const currentUser = await User.findById(req.user.id).select("profilePicture");
-      if (!currentUser) {
-        return res.status(404).json({ message: "User not found" });
+
+        console.log("Saved locally:", filename);
       }
 
-      const oldProfilePicture = currentUser.profilePicture;
+      if (!profilePictureUrl) {
+        throw new Error("Failed to generate profile picture URL");
+      }
 
       const user = await User.findByIdAndUpdate(
         req.user.id,
         { profilePicture: profilePictureUrl },
         { new: true, runValidators: true }
-      );
+      ).select("-passwordHash -googleId");
 
       if (!user) {
         return res.status(404).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
       }
 
-      deleteOldProfilePicture(oldProfilePicture).catch(err => {
-        console.error("Failed to delete old profile picture:", err);
-      });
-
       res.json({
         message: "Profile picture updated successfully",
         profilePicture: profilePictureUrl,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          profilePicture: profilePictureUrl,
+        },
       });
     } catch (error) {
       console.error("Profile picture upload error:", error.message);
 
       if (error instanceof multer.MulterError) {
         if (error.code === "LIMIT_FILE_SIZE") {
-          return res.status(400).json({ 
-            message: "File size too large. Maximum 5MB allowed" 
+          return res.status(400).json({
+            message: "File size too large. Maximum 5MB allowed",
           });
         }
         if (error.code === "LIMIT_UNEXPECTED_FILE") {
@@ -418,11 +429,12 @@ router.patch(
         return res.status(400).json({ message: error.message });
       }
 
-      res.status(500).json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
+      res.status(500).json({
+        message: "Failed to upload profile picture. Please try again.",
+      });
     }
   }
 );
-
 router.patch(
   "/notifications",
   authMiddleware,
@@ -530,7 +542,7 @@ router.post(
       const { currentPassword } = req.body;
       const userId = req.user.id;
 
-      console.log('Account deletion request from user:', userId);
+      console.log("Account deletion request from user:", userId);
 
       const user = await User.findById(userId).select("+passwordHash");
       if (!user || !user.isActive) {
@@ -540,13 +552,16 @@ router.post(
       if (user.passwordHash) {
         if (!currentPassword) {
           return res.status(400).json({
-            message: "Current password required for account deletion confirmation",
+            message:
+              "Current password required for account deletion confirmation",
           });
         }
 
         const isMatch = await user.comparePassword(currentPassword);
         if (!isMatch) {
-          return res.status(400).json({ message: "Current password is incorrect" });
+          return res
+            .status(400)
+            .json({ message: "Current password is incorrect" });
         }
       }
 
@@ -559,9 +574,9 @@ router.post(
         accountDeletionTokenExpiry: expiry,
       });
 
-      console.log('📧 Checking email config for deletion email...');
-      console.log('  Transporter:', !!transporter);
-      console.log('  User email:', user.email);
+      console.log("📧 Checking email config for deletion email...");
+      console.log("  Transporter:", !!transporter);
+      console.log("  User email:", user.email);
 
       if (transporter) {
         try {
@@ -569,12 +584,14 @@ router.post(
 
           const mailOptions = {
             from: {
-              name: 'Spillr Support',
-              address: process.env.EMAIL_USER
+              name: "Spillr Support",
+              address: process.env.EMAIL_USER,
             },
             to: user.email,
             subject: "Confirm Account Deletion - Spillr",
-            text: `Hi ${user.name || "there"},\n\nYou requested to delete your Spillr account.\n\nTo complete deletion:\n1. Visit: ${confirmationUrl}\n2. Enter token: ${token}\n3. Enter User ID: ${userId}\n\nThis expires in ${ACCOUNT_DELETION_TOKEN_EXPIRY_HOURS} hours.\n\nIf you didn't request this, ignore this email.`,
+            text: `Hi ${
+              user.name || "there"
+            },\n\nYou requested to delete your Spillr account.\n\nTo complete deletion:\n1. Visit: ${confirmationUrl}\n2. Enter token: ${token}\n3. Enter User ID: ${userId}\n\nThis expires in ${ACCOUNT_DELETION_TOKEN_EXPIRY_HOURS} hours.\n\nIf you didn't request this, ignore this email.`,
             html: `
               <!DOCTYPE html>
               <html>
@@ -585,8 +602,12 @@ router.post(
               <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
                 <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #856404;">
                   <h2 style="color: #856404; margin-top: 0;">⚠️ Account Deletion Request</h2>
-                  <p>Hi <strong>${validator.escape(user.name || "there")}</strong>,</p>
-                  <p>You have requested to delete your Spillr account (<strong>${validator.escape(user.email)}</strong>).</p>
+                  <p>Hi <strong>${validator.escape(
+                    user.name || "there"
+                  )}</strong>,</p>
+                  <p>You have requested to delete your Spillr account (<strong>${validator.escape(
+                    user.email
+                  )}</strong>).</p>
                   <p><strong>To complete the deletion process:</strong></p>
                   <ol>
                     <li>Visit: <a href="${confirmationUrl}" style="color: #856404;">${confirmationUrl}</a></li>
@@ -606,28 +627,32 @@ router.post(
             `,
           };
 
-          console.log(' Sending account deletion email...');
+          console.log(" Sending account deletion email...");
           await transporter.sendMail(mailOptions);
-          console.log(' Account deletion email sent successfully');
+          console.log(" Account deletion email sent successfully");
 
           res.json({
             message: `Account deletion confirmation sent to ${user.email}. Please check your inbox.`,
           });
         } catch (emailError) {
-          console.error(' Account deletion email error:', emailError.message);
+          console.error(" Account deletion email error:", emailError.message);
           console.error(emailError);
           return res.status(500).json({
-            message: "Failed to send confirmation email. Please try again later.",
+            message:
+              "Failed to send confirmation email. Please try again later.",
           });
         }
       } else {
-        console.warn(' Transporter not configured - cannot send deletion email');
+        console.warn(
+          " Transporter not configured - cannot send deletion email"
+        );
         res.status(200).json({
-          message: "Account marked for deletion. Email service not configured - please contact support.",
+          message:
+            "Account marked for deletion. Email service not configured - please contact support.",
         });
       }
     } catch (error) {
-      console.error('Account deletion request error:', error.message);
+      console.error("Account deletion request error:", error.message);
       console.error(error.stack);
       res.status(500).json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
     }
@@ -667,14 +692,14 @@ router.post("/confirm-account-deletion", async (req, res) => {
 
     try {
       await Wall.deleteMany({ ownerId: userId });
-      
-      const Feedback = mongoose.model('Feedback');
+
+      const Feedback = mongoose.model("Feedback");
       await Feedback.deleteMany({ userId: userId });
 
       const userWalls = await Wall.find({ ownerId: userId }).select("_id");
-      const wallIds = userWalls.map(w => w._id);
+      const wallIds = userWalls.map((w) => w._id);
       await Feedback.deleteMany({ wallId: { $in: wallIds } });
-      
+
       await User.findByIdAndDelete(userId);
 
       try {
@@ -688,11 +713,13 @@ router.post("/confirm-account-deletion", async (req, res) => {
         console.error("Failed to cleanup user files:", cleanupError.message);
       }
 
-      res.json({ message: "Account and all associated data deleted successfully" });
+      res.json({
+        message: "Account and all associated data deleted successfully",
+      });
     } catch (deleteError) {
       console.error("Cascade deletion error:", deleteError);
-      return res.status(500).json({ 
-        message: "Failed to delete account completely. Please contact support." 
+      return res.status(500).json({
+        message: "Failed to delete account completely. Please contact support.",
       });
     }
   } catch (error) {
@@ -710,7 +737,4 @@ router.get("/confirm-account-deletion", async (req, res) => {
   );
 });
 
-
-
 export default router;
-

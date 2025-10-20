@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useContext, createContext } from 'react';
+import { useState, useEffect, useCallback, useContext, createContext, useRef } from 'react';
 import Loading from '../components/Loading.jsx'
 
 const AuthContext = createContext();
@@ -15,16 +15,33 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [authMode, setAuthMode] = useState(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isFetchingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
+  const fetchAbortControllerRef = useRef(null);
+  
+  const fetchUser = useCallback(async (force = false) => {
+   
+    if (isFetchingRef.current && !force) {
+      console.log(' Skipping fetchUser - already in progress');
+      return;
+    }
 
-  const fetchUser = useCallback(async () => {
     if (isLoggingOut) {
       setLoading(false);
       return;
     }
 
+    if (fetchAbortControllerRef.current) {
+      fetchAbortControllerRef.current.abort();
+    }
+
+    fetchAbortControllerRef.current = new AbortController();
+    isFetchingRef.current = true;
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        credentials: 'include' 
+        credentials: 'include' ,
+         signal: fetchAbortControllerRef.current.signal
       });
       
       if (res.ok) {
@@ -38,40 +55,46 @@ export const AuthProvider = ({ children }) => {
         console.error('Failed to fetch user, status:', res.status);
         setUser(null);
       }
-    } catch (err) {
+   } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('Fetch aborted');
+        return;
+      }
       console.error('Failed to fetch user:', err);
       setUser(null);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
+      fetchAbortControllerRef.current = null;
+    }
+  }, [isLoggingOut]);
+
+  const login = useCallback(async (credentials) => {
+    try {
+      setError(null);
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(credentials)
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.user) {
+        const message = data.message || "Invalid email or password";
+        setError(message);
+        return { success: false, message };
+      }
+
+      setUser(data.user);
+      return { success: true, user: data.user };
+    } catch (error) {
+      setError(error.message);
+      return { success: false, message: error.message };
     }
   }, []);
-
-const login = useCallback(async (credentials) => {
-  try {
-    setError(null);
-
-    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(credentials)
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok || !data.user) {
-      const message = data.message || "Invalid email or password";
-      setError(message);
-      return { success: false, message };
-    }
-
-    setUser(data.user);
-    return { success: true, user: data.user };
-  } catch (error) {
-    setError(error.message);
-    return { success: false, message: error.message };
-  }
-}, []);
 
   const register = useCallback(async (userData) => {
     try {
@@ -84,60 +107,64 @@ const login = useCallback(async (credentials) => {
         credentials: 'include',
         body: JSON.stringify(userData)
       });
+      
       const data = await res.json().catch(() => ({}));
+      
       if (!res.ok) {
-      const message = data.message || "Registration failed. Please try again.";
-      setError(message);
-      throw new Error(message);
-    }
+        const message = data.message || "Registration failed. Please try again.";
+        setError(message);
+        throw new Error(message);
+      }
 
-    console.log("register response:", data);
-    setUser(data.user);
-    setError(null);
-    return data;
-  } catch (error) {
-    console.error("Registration error:", error);
-    setError(error.message || "An unexpected error occurred during registration.");
-    throw error;
-  } finally {
-    setLoading(false);
-  }
-}, []);
+      setUser(data.user);
+      setError(null);
+      return data;
+    } catch (error) {
+      console.error("Registration error:", error);
+      setError(error.message || "An unexpected error occurred during registration.");
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       setIsLoggingOut(true);
       setError(null);
+      
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       }); 
+      
       setUser(null);
       setError(null);
       setAuthMode(null);
-      console.log('Logout completed');
+      console.log(' Logout completed');
       
     } catch (error) {
       console.error('Logout error:', error);
-  
       setUser(null);
       setError(null);
       setAuthMode(null);
     } finally {
       setIsLoggingOut(false);
-      fetchUser();
     }
-  }, [fetchUser]);
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
- 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
 
-  
+  useEffect(() => {
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      fetchUser();
+    }
+  }, []); 
+
   const value = {
     user,
     loading,
@@ -149,16 +176,14 @@ const login = useCallback(async (credentials) => {
     register,
     logout,
     clearError,
-    refetchUser: fetchUser
+    refetchUser: () => fetchUser(true) 
   };
 
- return (
-  <AuthContext.Provider value={value}>
-    {loading ? <Loading /> : children}
-  </AuthContext.Provider>
-);
-
-
+  return (
+    <AuthContext.Provider value={value}>
+      {loading ? <Loading /> : children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
@@ -216,7 +241,6 @@ export const useLoginForm = () => {
       ...prev,
       [field]: e.target.value
     }));
-    
 
     if (errors[field]) {
       setErrors(prev => ({
@@ -281,7 +305,7 @@ export const useRegisterForm = () => {
       newErrors.name = 'Name must be at least 2 characters';
     }
 
-     if (!formData.username.trim()) {
+    if (!formData.username.trim()) {
       newErrors.username = 'Username is required';
     } else if (formData.username.trim().length < 3) {
       newErrors.username = 'Username must be at least 3 characters';
@@ -323,7 +347,6 @@ export const useRegisterForm = () => {
         [field]: ''
       }));
     }
-  
 
     if (errors.submit) {
       setErrors(prev => ({
@@ -360,7 +383,7 @@ export const useRegisterForm = () => {
 
   return {
     formData,
-    errors,
+    errors, 
     loading,
     handleChange,
     handleSubmit

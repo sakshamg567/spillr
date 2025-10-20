@@ -23,89 +23,115 @@ const getAuthHeaders = (isFormData = false) => {
 
 const headers = {};
 if (!isFormData) headers['Content-Type'] = 'application/json';
-
-return headers;
+ try {
+    const token = localStorage.getItem("token");
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  } catch (e) {
+    
+  }
+  return headers;
 };
 
-export const apiRequest = async (endpoint, options = {}) => {
-const url = `${API_BASE_URL}${endpoint}`;
+const isAbsoluteUrl = (u) => /^https?:\/\//i.test(u);
+
+export const apiRequest = async (endpoint, options = {}, { timeout = 10000, retryOn429 = true } = {}) => {
+const url = isAbsoluteUrl(endpoint) ? endpoint : `${API_BASE_URL}${endpoint}`;
 const isFormData = options.body instanceof FormData;
 
   const config = {
 ...options,
-method: options.method || 'GET',
+method: (options.method || 'GET').toUpperCase(),
 headers: {
 ...getAuthHeaders(isFormData),
 ...(options.headers || {})
 },
-credentials: 'include'
+ credentials: options.credentials ?? "include",
 };
 
-  console.log('API Request:', { 
-    url, 
-    method: config.method,
-    hasCredentials: config.credentials 
-  });
+  const doFetch = async (signal) => {
+    const response = await fetch(url, { ...config, signal });
+    return response;
+  };
 
-   try {
-    const response = await fetch(url, config);
+  let controller = new AbortController();
+  let timeoutId;
+
+  try {
+    timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    let response;
+    try {
+      response = await doFetch(controller.signal);
+    } catch (err) {
     
-    console.log('API Response:', { 
-      url, 
-      status: response.status,
-       headers: Object.fromEntries(response.headers.entries()),
-      statusText: response.statusText 
-    });
+      if (err.name === "AbortError") {
+        throw new APIError("Request timed out", API_ERRORS.TIMEOUT, 0, null);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
+    if (response.status === 204) {
+      if (!response.ok) {
+        // handle as error if not ok
+        throw new APIError("No content", API_ERRORS.SERVER_ERROR, 204, null);
+      }
+      return null;
+    }
+
+    const contentType = response.headers.get("content-type") || "";
     let data;
-    const contentType = response.headers.get('content-type');
-    
-    if (contentType && contentType.includes('application/json')) {
-      data = await response.json();
+    if (contentType.includes("application/json")) {
+      data = await response.json().catch(() => null);
     } else {
-      data = await response.text();
+      data = await response.text().catch(() => null);
     }
 
     if (!response.ok) {
+      if (response.status === 429 && retryOn429) {
+        const retryAfter = response.headers.get("Retry-After");
+        const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 3000;
+        if (isDev) console.warn(`Rate limited. Retrying after ${waitMs}ms...`);
+        await new Promise((res) => setTimeout(res, waitMs));
+        return apiRequest(endpoint, options, { timeout, retryOn429: false });
+      }
+
       switch (response.status) {
         case 401:
-          
-          window.dispatchEvent(new CustomEvent('auth-expired'));
+          try {
+            window.dispatchEvent(new CustomEvent("auth-expired"));
+          } catch {}
           throw new APIError(
-            data.message || 'Authentication required',
+            (data && data.message) || "Authentication required",
             API_ERRORS.UNAUTHORIZED,
             401,
             data
           );
-        
         case 400:
           throw new APIError(
-            data.message || 'Invalid request',
+            (data && data.message) || "Invalid request",
             API_ERRORS.VALIDATION_ERROR,
             400,
             data
           );
-        
         case 404:
           throw new APIError(
-            data.message || 'Resource not found',
+            (data && data.message) || "Resource not found",
             API_ERRORS.NOT_FOUND,
             404,
             data
           );
-        
         case 429:
           throw new APIError(
-            data.message || 'Too many requests',
+            (data && data.message) || "Too many requests",
             API_ERRORS.RATE_LIMITED,
             429,
             data
           );
-        
-        case 500:
         default:
           throw new APIError(
-            data.message || 'Server error',
+            (data && data.message) || response.statusText || "Server error",
             API_ERRORS.SERVER_ERROR,
             response.status,
             data
@@ -115,60 +141,64 @@ credentials: 'include'
 
     return data;
   } catch (error) {
-    if (error instanceof APIError) {
-      throw error;
-    }
     
-    
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (error instanceof APIError) throw error;
+
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
       throw new APIError(
-        'Network error. Please check your connection.',
+        "Network error. Please check your connection.",
         API_ERRORS.NETWORK_ERROR,
         0,
         null
       );
     }
-    
-   
+
+    if (error.name === "AbortError") {
+      throw new APIError("Request aborted", API_ERRORS.NETWORK_ERROR, 0, null);
+    }
     throw new APIError(
-      error.message || 'An unexpected error occurred',
+      error.message || "An unexpected error occurred",
       API_ERRORS.SERVER_ERROR,
       0,
       null
     );
+  } finally {
+    try {
+      clearTimeout(timeoutId);
+      controller = null;
+    } catch {}
   }
 };
 
-export const apiRequestWithLoading = async (endpoint, options = {}, setLoading) => {
-  if (setLoading) setLoading(true);
-  
+export const apiRequestWithLoading = async (endpoint, options = {}, setLoading, opts = {}) => {
+  if (typeof setLoading === "function") setLoading(true);
   try {
-    const result = await apiRequest(endpoint, options);
+    const result = await apiRequest(endpoint, options, opts);
     return result;
   } finally {
-    if (setLoading) setLoading(false);
+    if (typeof setLoading === "function") setLoading(false);
   }
 };
 
-
-export const createFormDataRequest = (data, fileKey, file) => {
+export const createFormDataRequest = (data = {}, fileKey = "file", file = null, method = "POST") => {
   const formData = new FormData();
-  
-  if (file) {
-    formData.append(fileKey, file);
-  }
-  
-  Object.keys(data).forEach(key => {
-    if (data[key] !== undefined && data[key] !== null) {
-      formData.append(key, data[key]);
-    }
+  if (file) formData.append(fileKey, file);
+
+  Object.entries(data).forEach(([k, v]) => {
+    if (v !== undefined && v !== null) formData.append(k, v);
   });
-  
+
   return {
-    method: 'POST',
+    method: method.toUpperCase(),
     body: formData,
-    headers: {}
+    headers: {}, 
   };
 };
 
-
+export default {
+  apiRequest,
+  apiRequestWithLoading,
+  createFormDataRequest,
+  APIError,
+  API_ERRORS,
+};

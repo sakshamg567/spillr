@@ -14,8 +14,8 @@ import { dirname } from "path";
 import cookieParser from 'cookie-parser';
 import WallRoute from './routes/wallRoutes.js'
 import compression from 'compression';
-const app = express();
 
+const app = express();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,7 +33,11 @@ if (process.env.FRONTEND_URL) {
   allowedOrigins.push(process.env.FRONTEND_URL);
 }
 
-console.log(' Allowed CORS origins:', allowedOrigins);
+//console.log(' Allowed CORS origins:', allowedOrigins);
+
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
 
 app.use(
   cors({
@@ -83,7 +87,7 @@ app.use(
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   message: { message: "Too many requests, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,

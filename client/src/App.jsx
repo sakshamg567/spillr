@@ -19,16 +19,19 @@ export default function App() {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-       
+      
         <Route path="/" element={<Home />} />
+        <Route path="/reset-password" element={<ResetPasswordForm />} />
         
-          <Route path="/wall/:slug" element={<PublicWallView />} />
-           <Route path="/reset-password" element={<ResetPasswordForm />} />
+      
+        <Route path="/wall/:slug" element={<PublicWallView />} />
+      
         <Route element={<AuthRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
 
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

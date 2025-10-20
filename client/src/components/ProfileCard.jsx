@@ -4,7 +4,6 @@ import { useAuth } from "../hooks/useAuth";
 import { FaCheckCircle, FaEdit, FaShareAlt } from "react-icons/fa";
 import { getImageUrl, getInitials } from "../utils/imageHelper";
 
-
 const ProfileCard = () => {
   const { profile, loading, updateProfile, isOperationPending } = useUser();
   const { user } = useAuth();
@@ -13,18 +12,16 @@ const ProfileCard = () => {
 
   const sharedLink = useMemo(() => {
     const username = profile?.username || user?.username;
-    return username
-      ? `${window.location.origin}/public/wall/${username}`
-      : window.location.origin;
+    if (!username) return window.location.origin;
+
+    return `${window.location.origin}/wall/${username}`;
   }, [profile?.username, user?.username]);
-
-const avatarUrl = useMemo(() => {
-  if (profile?.avatarUrl) return getImageUrl(profile.avatarUrl);
-  if (profile?.profilePicture) return getImageUrl(profile.profilePicture);
-  if (user?.avatarUrl) return getImageUrl(user.avatarUrl);
-  return null;
-}, [profile?.avatarUrl, profile?.profilePicture, user?.avatarUrl]);
-
+  const avatarUrl = useMemo(() => {
+    if (profile?.avatarUrl) return getImageUrl(profile.avatarUrl);
+    if (profile?.profilePicture) return getImageUrl(profile.profilePicture);
+    if (user?.avatarUrl) return getImageUrl(user.avatarUrl);
+    return null;
+  }, [profile?.avatarUrl, profile?.profilePicture, user?.avatarUrl]);
 
   const [imageError, setImageError] = useState(false);
 
@@ -58,7 +55,10 @@ const avatarUrl = useMemo(() => {
   if (loading && !profile) {
     return (
       <div className="p-2">
-        <div className="w-full bg-white border border-black shadow-[4px_4px_0_0_#000] rounded-none p-4 animate-pulse"style={{ fontFamily: "Space Grotesk" }}>
+        <div
+          className="w-full bg-white border border-black shadow-[4px_4px_0_0_#000] rounded-none p-4 animate-pulse"
+          style={{ fontFamily: "Space Grotesk" }}
+        >
           <div className="h-40 w-full bg-gray-200 rounded-none mb-3"></div>
           <div className="h-5 w-3/4 mx-auto bg-gray-200 rounded-none mb-2"></div>
           <div className="h-4 w-1/2 mx-auto bg-gray-200 rounded-none"></div>
@@ -69,47 +69,49 @@ const avatarUrl = useMemo(() => {
 
   return (
     <div className="w-full border-2 border-black  ">
-     
-<div className="flex items-center justify-center w-56 h-56 bg-gray-100 overflow-hidden mx-auto rounded-md border border-black mt-4">
-  {avatarUrl && !imageError ? (
-    <img
-      src={avatarUrl}
-      alt={`${userName}'s avatar`}
-      className="object-cover w-full h-full"
-      loading="lazy"
-      onError={(e) => {
-        console.error('Image failed to load:', e.target.src);
-        setImageError(true);
-      }}
-    />
-  ) : (
-    <span className="text-4xl font-bold text-gray-700">
-      {getInitials(userName)}
-      </span>
-  )}
-</div>
-
+      <div className="flex items-center justify-center w-56 h-56 bg-gray-100 overflow-hidden mx-auto rounded-md border border-black mt-4">
+        {avatarUrl && !imageError ? (
+          <img
+            src={avatarUrl}
+            alt={`${userName}'s avatar`}
+            className="object-cover w-full h-full"
+            loading="lazy"
+            onError={(e) => {
+              console.error("Image failed to load:", e.target.src);
+              setImageError(true);
+            }}
+          />
+        ) : (
+          <span className="text-4xl font-bold text-gray-700">
+            {getInitials(userName)}
+          </span>
+        )}
+      </div>
 
       {/* Card Body — ALL CENTERED */}
       <div className="p-3 space-y-3 text-center">
-        <div className="flex items-center justify-center gap-1"> 
-          <h3 className="font-bold text-base text-gray-900"style={{ fontFamily: "Space Grotesk" }}>
+        <div className="flex items-center justify-center gap-1">
+          <h3
+            className="font-bold text-base text-gray-900"
+            style={{ fontFamily: "Space Grotesk" }}
+          >
             {userName}
           </h3>
           {isVerified && <FaCheckCircle className="h-4 w-4 text-blue-500" />}
         </div>
         {/* Centered action buttons */}
         <div className="pt-2 border-t border-gray-200 flex flex-row justify-center gap-4">
-  
-  <button
-    onClick={handleShareLink}
-    className="flex items-center justify-center gap-1 text-xs font-semibold text-gray-700 hover:text-black"
-  >
-    <FaShareAlt className="h-4 w-4 text-black" style={{ fontFamily: "Space Grotesk" }} / >
-    {copySuccess ? "Copied!" : "Share"}
-  </button>
-</div>
-
+          <button
+            onClick={handleShareLink}
+            className="flex items-center justify-center gap-1 text-xs font-semibold text-gray-700 hover:text-black"
+          >
+            <FaShareAlt
+              className="h-4 w-4 text-black"
+              style={{ fontFamily: "Space Grotesk" }}
+            />
+            {copySuccess ? "Copied!" : "Share"}
+          </button>
+        </div>
       </div>
     </div>
   );
