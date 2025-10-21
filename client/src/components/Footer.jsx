@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Modal from "./Modal";
+import Modal from "./Modals";
 
 const Footer = () => {
   const [modalContent, setModalContent] = useState(null);
