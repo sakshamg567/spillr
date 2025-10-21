@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Modal = ({ children, onClose }) => {
   useEffect(() => {
