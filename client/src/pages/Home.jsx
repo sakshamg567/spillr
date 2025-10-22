@@ -10,6 +10,8 @@ const RegisterForm = lazy(() => import("../components/auth/RegisterForm"));
 const Footer = lazy(() => import("../components/Footer"));
 
 
+
+
 const QuickLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-transparent ">
     <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -41,19 +43,23 @@ const Modal = memo(({ children, onClose }) => {
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-[9999] overflow-auto"
-      onClick={onClose}
-    >
+  <div
+  className="fixed inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-[9999] overflow-auto modal-overlay"
+  onClick={onClose}
+>
+
       <div
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-lg p-6 bg-white/10 rounded-lg shadow-lg backdrop-blur-sm border border-white/20"
       >
-        <div className="max-h-[90vh] ">
-          <Suspense fallback={<QuickLoader />}>
-            {children}
-          </Suspense>
-        </div>
+    
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[200px]">
+            <QuickLoader />
+          </div>
+        }>
+          {children}
+        </Suspense>
       </div>
     </div>
   );
@@ -100,6 +106,11 @@ const Home = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+  import("../components/auth/LoginForm");
+  import("../components/auth/RegisterForm");
+}, []); 
 
   if (loading) {
     return (

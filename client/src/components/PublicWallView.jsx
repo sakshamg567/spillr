@@ -128,7 +128,7 @@ const PublicWallView = ({ logout }) => {
     if (!slug) return;
 
     const intervalId = setInterval(() => {
-      console.log('🔄 Auto-refreshing public feedback...');
+      console.log(' Auto-refreshing public feedback...');
       fetchAnsweredFeedback();
     }, 20000); // 20 seconds
 
@@ -139,7 +139,8 @@ const PublicWallView = ({ logout }) => {
   const handleManualRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([fetchUserProfile(), fetchAnsweredFeedback()]);
+     await fetchAnsweredFeedback();
+
     } catch (err) {
       console.error('Refresh failed:', err);
     } finally {
