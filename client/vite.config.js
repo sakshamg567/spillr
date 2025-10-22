@@ -2,24 +2,69 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-const exposedEnv = {
-  VITE_API_URL: JSON.stringify(process.env.VITE_API_URL),
-  VITE_OTHER_KEY: JSON.stringify(process.env.VITE_OTHER_KEY)
-}
-
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  define: {
-    'process.env': exposedEnv
+  plugins: [
+    react({
+      fastRefresh: true,
+    }),
+    tailwindcss()
+  ],
+
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'lucide-react'
+    ],
+    exclude: ['framer-motion'] 
   },
+
   build: {
     sourcemap: false,
+
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, 
+        drop_debugger: true,
+      },
+    },
+
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-        }
-      }
-    }
-  }
+          'react-vendor': ['react', 'react-dom'],
+          
+          'router': ['react-router-dom'],
+ 
+          'ui-icons': ['lucide-react', 'react-icons'],
+
+          'animations': ['framer-motion'],
+        },
+        
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
+    },
+
+    chunkSizeWarningLimit: 1000,
+ 
+    cssCodeSplit: true,
+  },
+
+  server: {
+    https: false,
+    
+    hmr: {
+      overlay: false,
+    },
+  },
+
+
+  preview: {
+    port: 4173,
+    strictPort: false,
+  },
 })

@@ -1,4 +1,4 @@
-import { useState, useEffect,useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useUser,
@@ -73,6 +73,7 @@ const UserSettings = () => {
     newFeedback: false,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageTimestamp, setImageTimestamp] = useState(Date.now());
 
   useEffect(() => {
     if (profile) {
@@ -103,15 +104,16 @@ const handleProfilePictureChange = async (e) => {
   if (!file) return;
 
   if (!file.type.startsWith('image/')) {
-    alert('Please select an image file');
+   // alert('Please select an image file');
     return;
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    alert('File size must be less than 5MB');
+    //alert('File size must be less than 5MB');
     return;
   }
 
+  
   if (previewImage) {
     URL.revokeObjectURL(previewImage);
   }
@@ -122,24 +124,38 @@ const handleProfilePictureChange = async (e) => {
 
   try {
     const response = await uploadProfilePicture(file);
-    //console.log(' Upload response:', response);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('Upload response:', response);
+    
+    
+    setImageTimestamp(Date.now());
+    
+    // Wait a bit for Cloudinary to propagate
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // Reload profile
     await reloadProfile();
+    
+    // Clear preview after successful upload
     URL.revokeObjectURL(localPreview);
     setPreviewImage(null);
-    alert('Profile picture updated successfully!');
-  } catch (err) {
-    alert('Failed to upload image: ' + err.message);
     
+    //alert('Profile picture updated successfully!');
+  } catch (err) {
+    console.error('Upload error:', err);
+   // alert('Failed to upload image. Please try again.');
+    
+    // Revert preview on error
     URL.revokeObjectURL(localPreview);
     setPreviewImage(null);
   } finally {
     setUploadingImage(false);
+    e.target.value = ''; // Reset file input
   }
 };
 
+// Get display image with cache busting
 const displayImage = previewImage || 
-  (profile?.profilePicture ? `${getImageUrl(profile.profilePicture)}?t=${Date.now()}` : null);
+  (profile?.profilePicture ? `${getImageUrl(profile.profilePicture)}?t=${imageTimestamp}` : null);
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
@@ -150,7 +166,9 @@ const displayImage = previewImage ||
         bio: profileData.bio,
       });
       await reloadProfile();
+     // alert('Profile updated successfully!');
     } catch (err) {
+     // alert('Failed to update profile');
     } finally {
       setSavingProfile(false);
     }
@@ -160,7 +178,9 @@ const displayImage = previewImage ||
     setSavingNotifications(true);
     try {
       await updateNotifications({ newFeedback: notifications.newFeedback });
+      //alert('Notification settings updated!');
     } catch (err) {
+     // alert('Failed to update settings');
     } finally {
       setSavingNotifications(false);
     }
@@ -248,12 +268,17 @@ const displayImage = previewImage ||
                   {/* Profile Picture */}
                   <div className="flex items-center gap-6">
                     <div className="relative">
-                      <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden border-2 border-black">
                         {displayImage ? (
                           <img
+                            key={imageTimestamp}
                             src={displayImage}
                             alt="Profile"
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.error('Image load error:', e.target.src);
+                              e.target.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gray-300">
@@ -342,7 +367,7 @@ const displayImage = previewImage ||
                   <button
                     onClick={handleSaveProfile}
                     disabled={savingProfile}
-                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
+                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-black font-medium  transition-colors cursor-pointer hover:border hover:border-2"
                   >
                     {savingProfile ? "Saving..." : "Save Changes"}
                   </button>
@@ -466,7 +491,7 @@ const displayImage = previewImage ||
                   <button
                     type="submit"
                     disabled={passwordLoading}
-                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
+                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-black font-medium  transition-colors cursor-pointer hover:border hover:border-2"
                   >
                     {passwordLoading ? "Updating..." : "Update Password"}
                   </button>
@@ -512,7 +537,7 @@ const displayImage = previewImage ||
                   <button
                     onClick={handleSaveNotifications}
                     disabled={savingNotifications}
-                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-2"
+                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-black font-medium  transition-colors cursor-pointer hover:border hover:border-2"
                   >
                     {savingNotifications ? "Saving..." : "Save Settings"}
                   </button>
@@ -549,7 +574,7 @@ const displayImage = previewImage ||
                     </ul>
                     <button
                       onClick={() => setShowDeleteModal(true)}
-                      className="px-6 py-2 bg-red-600 text-white w-40 h-12 bg-red-100 shadow-card  shadow-[4px_4px_0_0_#000] text-blackfont-medium  transition-colors cursor-pointer hover:border hover:border-font-medium hover:bg-red-10 00 flex items-center gap-2"
+                      className="px-6 py-2 bg-red-600 text-white w-40 h-12 bg-red-100 shadow-card  shadow-[4px_4px_0_0_#000] text-black font-medium  transition-colors cursor-pointer hover:border hover:border-2 flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete My Account
