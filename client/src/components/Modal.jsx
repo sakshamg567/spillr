@@ -7,13 +7,33 @@ const Modal = ({ children, onClose }) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
+
+    // Lock scroll
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.overflow = "hidden";
+    document.body.style.width = "100%";
+
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+      // Unlock scroll
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      document.body.style.width = "";
+      window.scrollTo(0, scrollY);
+    };
   }, [onClose]);
 
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 bg-black flex items-center justify-center z-[9999] overflow-hidden"
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -33,4 +53,5 @@ const Modal = ({ children, onClose }) => {
     </AnimatePresence>
   );
 };
+
 export default Modal;

@@ -199,3 +199,6 @@ body {
 .modal-overlay {
   animation: fadeInOverlay 0.2s ease-out;
 }
+html {
+  scroll-behavior: smooth;
+}
