@@ -291,6 +291,8 @@ export const useBlockManagement = () => {
     }
   }, []);
 
+
+
   return {
     loading,
     error,
@@ -302,39 +304,61 @@ export const useBlockManagement = () => {
   };
 };
 
+
 export const useAccountDeletion = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
 
-  const executeWithLoading = useCallback(async (apiCall) => {
+  const requestDeletion = useCallback(async (password) => {
     setLoading(true);
     setError(null);
+    setSuccess(false);
+
     try {
-      const result = await apiCall();
-      return result;
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      
+      const response = await fetch(`${API_BASE_URL}/api/settings/delete-account-now`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete account');
+      }
+
+      setSuccess(true);
+      
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      
+      return data;
     } catch (err) {
-      setError(err.message || 'Operation failed');
-      return null;
+      const errorMessage = err.message || 'Failed to delete account';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const requestDeletion = useCallback(async (currentPassword) => {
-    const result = await executeWithLoading(() => userService.requestAccountDeletion(currentPassword));
-    if (result) setSuccess(true);
-    return result;
-  }, [executeWithLoading]);
-
-  const confirmDeletion = useCallback(async (token, userId) => {
-    return await executeWithLoading(() => userService.confirmAccountDeletion(token, userId));
-  }, [executeWithLoading]);
-
   const resetState = useCallback(() => {
-    setError(null);
+    setLoading(false);
     setSuccess(false);
+    setError(null);
   }, []);
 
-  return { loading, error, success, requestDeletion, confirmDeletion, resetState };
+  return {
+    loading,
+    success,
+    error,
+    requestDeletion,
+    resetState
+  };
 };

@@ -2,40 +2,33 @@ import { useState, useEffect, lazy, Suspense, memo } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, Shield, Zap, MessageCircle } from "lucide-react";
+import Navbar from "../components/Navbar";
+import LoginForm from "../components/auth/LoginForm";
+import RegisterForm from "../components/auth/RegisterForm";
 
-// ✅ Lazy load heavy components
-const LoadingSpinner = lazy(() => import("../components/Loading"));
-const Navbar = lazy(() => import("../components/Navbar"));
-const LoginForm = lazy(() => import("../components/auth/LoginForm"));
-const RegisterForm = lazy(() => import("../components/auth/RegisterForm"));
 const Footer = lazy(() => import("../components/Footer"));
 
-// ✅ Lightweight loading fallback
 const QuickLoader = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-white">
+  <div className="flex items-center justify-center py-4">
     <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
-// ✅ Simple Modal without framer-motion initially
 const Modal = memo(({ children, onClose }) => {
   useEffect(() => {
     const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
+    document.body.style.cssText = `
+      position: fixed;
+      top: -${scrollY}px;
+      width: 100%;
+      overflow: hidden;
+    `;
 
-    const handleEsc = (e) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handleEsc = (e) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", handleEsc);
 
     return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = '';
+      document.body.style.cssText = "";
       window.scrollTo(0, scrollY);
       document.removeEventListener("keydown", handleEsc);
     };
@@ -48,13 +41,9 @@ const Modal = memo(({ children, onClose }) => {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg p-6 bg-white/10 rounded-lg shadow-lg backdrop-blur-sm border border-white/20"
+        className="w-full max-w-lg p-6 bg-white/10 rounded-lg shadow-lg backdrop-blur-sm border border-white/20 max-h-[90vh] overflow-y-auto"
       >
-        <div className="max-h-[90vh] overflow-y-auto">
-          <Suspense fallback={<QuickLoader />}>
-            {children}
-          </Suspense>
-        </div>
+        {children}
       </div>
     </div>
   );
@@ -62,14 +51,10 @@ const Modal = memo(({ children, onClose }) => {
 
 Modal.displayName = 'Modal';
 
-// ✅ Memoized feature cards to prevent re-renders
-const FeatureCard = memo(({ icon: Icon, title, description, delay = 0, bgColor = "bg-white" }) => (
+const FeatureCard = memo(({ icon: Icon, title, description, bgColor = "bg-white" }) => (
   <div 
     className={`flex flex-col ${bgColor} p-6 shadow-card shadow-[6px_6px_0_0_#000] transform transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-lg`}
-    style={{ 
-      fontFamily: "Space Grotesk",
-      animationDelay: `${delay}ms`
-    }}
+    style={{ fontFamily: "Space Grotesk" }}
   >
     <div className="gradient-primary p-3 rounded-xl w-fit mb-4">
       <Icon className="h-7 w-7" />
@@ -91,34 +76,27 @@ const Home = () => {
   const [hideTitle, setHideTitle] = useState(false);
   const { loading, authMode, setAuthMode, user, logout, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    if (isAuthenticated && location.pathname === "/") {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [isAuthenticated, navigate, location.pathname]);
 
   useEffect(() => {
+   
+    if (isAuthenticated && location.pathname === "/") {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+
+
     const handleScroll = () => setHideTitle(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isAuthenticated, navigate, location.pathname]);
 
   if (loading) {
-    return (
-      <Suspense fallback={<QuickLoader />}>
-        <LoadingSpinner />
-      </Suspense>
-    );
+    return <QuickLoader />;
   }
 
   const handleCloseModal = () => setAuthMode(null);
 
-  const handleRegisterSuccess = () => {
-    setAuthMode(null);
-    setTimeout(() => navigate("/dashboard", { replace: true }), 100);
-  };
-
-  const handleLoginSuccess = () => {
+  const handleSuccess = () => {
     setAuthMode(null);
     setTimeout(() => navigate("/dashboard", { replace: true }), 100);
   };
@@ -126,9 +104,8 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       <main>
-
         <div className="min-h-screen w-full relative">
-        
+     
           <div
             className="absolute inset-0 z-0"
             style={{
@@ -179,7 +156,7 @@ const Home = () => {
 
           <div className="relative z-10">
             <section className="flex items-center justify-center min-h-screen">
-     
+          
               <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4">
                 {!hideTitle && (
                   <h2
@@ -189,17 +166,15 @@ const Home = () => {
                   </h2>
                 )}
                 <div className="absolute left-1/2 transform -translate-x-1/2 pt-2 pl-12 md:pl-4">
-                  <Suspense fallback={<div className="w-32 h-10 bg-gray-200 animate-pulse" />}>
-                    <Navbar />
-                  </Suspense>
+                  <Navbar />
                 </div>
               </header>
 
-              {/* Modals */}
+           
               {authMode === "login" && (
                 <Modal onClose={handleCloseModal}>
                   <LoginForm
-                    onSuccess={handleLoginSuccess}
+                    onSuccess={handleSuccess}
                     onToggleRegister={() => setAuthMode("register")}
                     onCancel={handleCloseModal}
                   />
@@ -209,18 +184,17 @@ const Home = () => {
               {authMode === "register" && (
                 <Modal onClose={handleCloseModal}>
                   <RegisterForm
-                    onSuccess={handleRegisterSuccess}
+                    onSuccess={handleSuccess}
                     onToggleLogin={() => setAuthMode("login")}
                     onCancel={handleCloseModal}
                   />
                 </Modal>
               )}
 
-        
               <div className="flex flex-col items-center justify-center max-w-2xl text-center px-4">
-             
+         
                 <h1
-                  className="m-0 text-5xl md:hidden leading-tight tracking-tight text-balance poster-text animate-fade-in"
+                  className="m-0 text-5xl md:hidden leading-tight tracking-tight text-balance poster-text"
                   style={{ fontFamily: "Space Grotesk" }}
                 >
                   ASK
@@ -232,9 +206,9 @@ const Home = () => {
                   OPENLY.
                 </h1>
 
-                {/* Desktop Heading */}
+            
                 <h1
-                  className="hidden md:block text-6xl lg:text-7xl text-black leading-none tracking-tight text-balance poster-text animate-fade-in"
+                  className="hidden md:block text-6xl lg:text-7xl text-black leading-none tracking-tight text-balance poster-text"
                   style={{ fontFamily: "Space Grotesk" }}
                 >
                   ASK <br />
@@ -244,7 +218,7 @@ const Home = () => {
                 </h1>
 
                 <p
-                  className="text-lg text-gray-800 mt-6 animate-fade-in-delayed"
+                  className="text-lg text-gray-800 mt-6"
                   style={{ fontFamily: "Space Grotesk" }}
                 >
                   Share openly or anonymously, whatever feels right. <br />
@@ -257,7 +231,7 @@ const Home = () => {
                 {user ? (
                   <button
                     onClick={logout}
-                    className="mt-8 px-4 py-2 text-black border-2 border-black bg-yellow-200 shadow-[6px_6px_0_0_#000] hover:-translate-y-[2px] active:translate-y-[2px] transition-transform text-lg animate-fade-in-delayed"
+                    className="mt-8 px-4 py-2 text-black border-2 border-black bg-yellow-200 shadow-[6px_6px_0_0_#000] hover:-translate-y-[2px] active:translate-y-[2px] transition-transform text-lg"
                     style={{ fontFamily: "Space Grotesk" }}
                   >
                     Logout
@@ -265,7 +239,7 @@ const Home = () => {
                 ) : (
                   <button
                     onClick={() => setAuthMode("register")}
-                    className="mt-8 px-4 py-2 text-black border-2 border-black bg-yellow-200 shadow-[6px_6px_0_0_#000] hover:-translate-y-[2px] active:translate-y-[2px] transition-transform text-lg font-medium animate-fade-in-delayed"
+                    className="mt-8 px-4 py-2 text-black border-2 border-black bg-yellow-200 shadow-[6px_6px_0_0_#000] hover:-translate-y-[2px] active:translate-y-[2px] transition-transform text-lg font-medium"
                     style={{ fontFamily: "Space Grotesk" }}
                   >
                     {isAuthenticated ? "Go to Dashboard" : "Get Started"}
@@ -276,8 +250,7 @@ const Home = () => {
             </section>
           </div>
         </div>
-
-    
+        {/* Features Section */}
         <div className="w-full px-6 py-12 flex items-center justify-center bg-yellow-200 border border-4">
           <div className="w-full max-w-6xl space-y-8">
             <div className="text-center mb-12">
@@ -294,24 +267,22 @@ const Home = () => {
                 icon={Shield}
                 title="Complete Privacy"
                 description="Your feedback providers remain completely anonymous, encouraging honest and constructive input."
-                delay={0}
               />
               <FeatureCard
                 icon={Zap}
                 title="Instant Setup"
                 description="Get your feedback wall live in minutes. No complex configuration or technical knowledge required."
-                delay={50}
               />
               <FeatureCard
                 icon={MessageCircle}
                 title="Real Engagement"
                 description="Build deeper connections with your audience through meaningful, two-way communication."
-                delay={100}
               />
             </div>
           </div>
         </div>
 
+      
         <div className="w-full px-6 py-12 flex items-center justify-center bg-white">
           <div className="w-full max-w-6xl space-y-8">
             <div className="text-center mb-12">
@@ -336,7 +307,6 @@ const Home = () => {
                 title="Create Your Profile"
                 description="Create your unique profile in seconds. Customize colors, title, and upload a profile picture."
                 bgColor="bg-yellow-200"
-                delay={0}
               />
               <FeatureCard
                 icon={() => (
@@ -347,7 +317,6 @@ const Home = () => {
                 title="Share with Anyone"
                 description="Easily share your link with friends or on social media platforms to start receiving anonymous feedback."
                 bgColor="bg-yellow-200"
-                delay={50}
               />
               <FeatureCard
                 icon={() => (
@@ -358,14 +327,14 @@ const Home = () => {
                 title="Manage & Respond"
                 description="Log in to your dashboard to see all feedback in real time. Reply publicly, react with emojis, archive items, and track engagement."
                 bgColor="bg-yellow-200"
-                delay={100}
               />
             </div>
           </div>
         </div>
       </main>
 
-      <Suspense fallback={null}>
+      
+      <Suspense fallback={<QuickLoader />}>
         <Footer />
       </Suspense>
 

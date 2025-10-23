@@ -47,7 +47,6 @@ const PublicWallView = ({ logout }) => {
           { label: "Home", onClick: () => handleNavigation("/") },
           { label: "Dashboard", onClick: () => handleNavigation("/dashboard") },
           { label: "Settings", onClick: () => handleNavigation("/settings") },
-          { label: "Logout", onClick: logout },
         ]
       : [
           { label: "Home", onClick: () => handleNavigation("/") },

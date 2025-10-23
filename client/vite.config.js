@@ -8,7 +8,13 @@ const exposedEnv = {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react({
+      fastRefresh: true,
+      jsxRuntime: 'automatic'
+    }), 
+    tailwindcss()
+  ],
   define: {
     'process.env': exposedEnv
   },
@@ -17,9 +23,40 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-        }
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['react-router-dom'],
+          'ui': ['lucide-react', 'react-hot-toast'],
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    },
+
+    chunkSizeWarningLimit: 1000,
+ 
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, 
+        drop_debugger: true
       }
     }
+  },
+ 
+  server: {
+    hmr: {
+      overlay: true
+    }
+  },
+
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'lucide-react'
+    ],
+    exclude: []
   }
 })

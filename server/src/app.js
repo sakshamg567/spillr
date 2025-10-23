@@ -20,7 +20,15 @@ const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-app.use(compression());
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6 
+}));
 
 
 const allowedOrigins = [
@@ -121,7 +129,7 @@ app.use("/uploads", (req, res, next) => {
 app.use("/uploads", express.static(uploadsPath, {
   maxAge: "1d",
   setHeaders: (res, filePath) => {
-    res.setHeader("Cache-Control", "public, max-age=86400");
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
   }
 }));
 

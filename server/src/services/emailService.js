@@ -17,7 +17,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       to: [{ email: to }],
       subject: subject,
       htmlContent: html,
-      textContent: text || html.replace(/<[^>]*>/g, '') // Strip HTML tags for text
+      textContent: text || html.replace(/<[^>]*>/g, '') 
     };
 
     console.log('Sending email via Brevo API to:', to);
@@ -30,17 +30,19 @@ const sendEmail = async ({ to, subject, html, text }) => {
       timeout: 10000
     });
 
+    const messageId = response.data?.messageId || response.data?.id || null;
+
     console.log('Email sent successfully. Message ID:', response.data.messageId);
-    return { success: true, messageId: response.data.messageId };
+    return { success: true, messageId
+    };
 
   } catch (error) {
-    console.error('Failed to send email via Brevo:');
-    console.error('Status:', error.response?.status);
-    console.error('Error:', error.response?.data?.message || error.message);
-    
-    return { 
-      success: false, 
-      error: error.response?.data?.message || error.message 
+    const errMessage = error.response?.data?.message || error.message || "Unknown error";
+    console.error('Failed to send email via Brevo:', errMessage);
+
+    return {
+      success: false,
+      error: errMessage
     };
   }
 };

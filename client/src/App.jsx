@@ -7,6 +7,7 @@ import LoadingSpinner from "./components/Loading";
 import Settings from "./components/UserSettings";
 import PublicWallView from "./components/PublicWallView";
 import ResetPasswordForm from './components/auth/ResetPasswordForm'
+
 import "@fontsource/space-grotesk/400.css"
 import "@fontsource/space-grotesk/700.css"
 import "@fontsource/ibm-plex-mono/400.css"

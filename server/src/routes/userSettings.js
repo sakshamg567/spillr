@@ -3,7 +3,6 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import User from "../models/User.js";
 import multer from "multer";
 import crypto from "crypto";
-import transporter from "../config/email.js";
 import mongoose from "mongoose";
 import validator from "validator";
 import rateLimit from "express-rate-limit";
@@ -511,178 +510,91 @@ router.post(
       res.status(500).json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
     }
   }
+
 );
 
-import sendEmail from "../services/emailService.js";
-
-router.post(
-  "/request-account-deletion",
-  authMiddleware,
-  accountDeletionLimiter,
-  async (req, res) => {
-    try {
-      const { currentPassword } = req.body;
-      const userId = req.user.id;
-
-      const user = await User.findById(userId).select("+passwordHash");
-      if (!user || !user.isActive) {
-        return res.status(404).json({ message: ERROR_MESSAGES.USER_NOT_FOUND });
-      }
-
-      if (user.passwordHash) {
-        if (!currentPassword) {
-          return res.status(400).json({
-            message:
-              "Current password required for account deletion confirmation",
-          });
-        }
-
-        const isMatch = await user.comparePassword(currentPassword);
-        if (!isMatch) {
-          return res
-            .status(400)
-            .json({ message: "Current password is incorrect" });
-        }
-      }
-
-      const token = crypto.randomBytes(32).toString("hex");
-      const expiry = new Date();
-      expiry.setHours(expiry.getHours() + ACCOUNT_DELETION_TOKEN_EXPIRY_HOURS);
-
-      await User.findByIdAndUpdate(userId, {
-        accountDeletionToken: token,
-        accountDeletionTokenExpiry: expiry,
-      });
-
-      const confirmationUrl = `${process.env.FRONTEND_URL}/confirm-deletion`;
-
-      const mailContent = {
-        to: user.email,
-        subject: "Confirm Account Deletion - Spillr",
-        text: `To confirm deletion, visit: ${confirmationUrl}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #856404;">
-              <h2 style="color: #856404; margin-top: 0;">Account Deletion Request</h2>
-              <p>Hi <strong>${validator.escape(
-                user.name || "there"
-              )}</strong>,</p>
-              <p>You have requested to delete your Spillr account.</p>
-              <p><strong>To complete the deletion process:</strong></p>
-              <ol>
-                <li>Visit: <a href="${confirmationUrl}" style="color: #856404;">${confirmationUrl}</a></li>
-                <li>Enter your deletion token: <code style="background: #f8f9fa; padding: 2px 6px;">${token}</code></li>
-                <li>Enter your User ID: <code style="background: #f8f9fa; padding: 2px 6px;">${userId}</code></li>
-              </ol>
-              <p><strong>This link expires in ${ACCOUNT_DELETION_TOKEN_EXPIRY_HOURS} hours.</strong></p>
-              <p>If you did not request this, please ignore this email.</p>
-            </div>
-          </body>
-          </html>
-        `,
-      };
-
-      const emailResult = await sendEmail(mailContent);
-
-      if (emailResult.success) {
-        res.json({
-          message: `Account deletion confirmation sent to ${user.email}. Please check your inbox.`,
-        });
-      } else {
-        res.status(500).json({
-          message: "Failed to send confirmation email. Please try again later.",
-        });
-      }
-    } catch (error) {
-      console.error("Account deletion request error:", error.message);
-      res.status(500).json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
-    }
-  }
-);
-
-router.post("/confirm-account-deletion", async (req, res) => {
+router.delete("/delete-account-now", authMiddleware, accountDeletionLimiter, async (req, res) => {
   try {
-    const { token, userId } = req.body;
+    const userId = req.user.id;
+    const { password } = req.body;
 
-    if (!token || !userId) {
-      return res.status(400).json({ message: "Missing token or userId" });
+    console.log('Delete account request for user:', userId);
+
+    if (!password || typeof password !== 'string') {
+      console.log('Password validation failed');
+      return res.status(400).json({ message: "Password is required", success: false });
     }
 
-    if (!validateObjectId(userId)) {
-      return res.status(400).json({ message: "Invalid userId format" });
+    const user = await User.findById(userId).select('+passwordHash');
+    
+    if (!user || !user.isActive) {
+      console.log('User not found or inactive');
+      return res.status(404).json({ message: ERROR_MESSAGES.USER_NOT_FOUND, success: false });
     }
 
-    const user = await User.findOne({
-      _id: userId,
-      accountDeletionToken: token,
-    }).select("+accountDeletionToken +accountDeletionTokenExpiry");
-
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: "Invalid token or user not found" });
+    if (user.passwordHash) {
+      console.log('Verifying password...');
+      const isMatch = await user.comparePassword(password);
+      if (!isMatch) {
+        console.log('Password verification failed');
+        return res.status(400).json({ message: "Incorrect password", success: false });
+      }
+      console.log('Password verified successfully');
+    } else {
+      console.log('OAuth user - skipping password verification');
     }
 
-    if (
-      !user.accountDeletionTokenExpiry ||
-      user.accountDeletionTokenExpiry < Date.now()
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Deletion token has expired. Please request again." });
+    console.log('Starting account deletion process...');
+
+    const wallResult = await Wall.deleteMany({ ownerId: userId });
+    console.log(`Deleted ${wallResult.deletedCount} walls`);
+
+    const Feedback = mongoose.model("Feedback");
+    const userWalls = await Wall.find({ ownerId: userId }).select("_id");
+    const wallIds = userWalls.map((w) => w._id);
+    const feedbackResult1 = await Feedback.deleteMany({ wallId: { $in: wallIds } });
+    const feedbackResult2 = await Feedback.deleteMany({ userId });
+    console.log(`Deleted ${feedbackResult1.deletedCount + feedbackResult2.deletedCount} feedback items`);
+
+    if (user.profilePicture) {
+      console.log('Deleting profile picture...');
+      await deleteOldProfilePicture(user.profilePicture);
     }
 
     try {
-      await Wall.deleteMany({ ownerId: userId });
-
-      const Feedback = mongoose.model("Feedback");
-      await Feedback.deleteMany({ userId: userId });
-
-      const userWalls = await Wall.find({ ownerId: userId }).select("_id");
-      const wallIds = userWalls.map((w) => w._id);
-      await Feedback.deleteMany({ wallId: { $in: wallIds } });
-
-      await User.findByIdAndDelete(userId);
-
-      try {
+      if (fs.existsSync(uploadDir)) {
         const userFiles = fs
           .readdirSync(uploadDir)
           .filter((file) => file.startsWith(`user-${userId}-`));
         for (const file of userFiles) {
-          await unlink(path.join(uploadDir, file));
+          fs.unlinkSync(path.join(uploadDir, file));
         }
-      } catch (cleanupError) {
-        console.error("Failed to cleanup user files:", cleanupError.message);
+        console.log(`Deleted ${userFiles.length} local files`);
       }
-
-      res.json({
-        message: "Account and all associated data deleted successfully",
-      });
-    } catch (deleteError) {
-      console.error("Cascade deletion error:", deleteError);
-      return res.status(500).json({
-        message: "Failed to delete account completely. Please contact support.",
-      });
+    } catch (err) {
+      console.error("Failed to cleanup user files:", err);
+      
     }
-  } catch (error) {
-    console.error("Account deletion confirmation error:", error.message);
-    res.status(500).json({ message: ERROR_MESSAGES.INTERNAL_ERROR });
-  }
-});
 
-router.get("/confirm-account-deletion", async (req, res) => {
-  const frontendUrl = process.env.FRONTEND_URL;
-  res.redirect(
-    `${frontendUrl}/confirm-deletion?${new URLSearchParams(
-      req.query
-    ).toString()}`
-  );
+    
+    await User.findByIdAndDelete(userId);
+    console.log('User account deleted successfully');
+
+
+    return res.status(200).json({ 
+      message: "Account and all associated data deleted successfully",
+      success: true 
+    });
+  } catch (err) {
+    console.error("Account deletion error:", err);
+    console.error("Error stack:", err.stack);
+    
+  
+    return res.status(500).json({ 
+      message: err.message || "Failed to delete account",
+      success: false 
+    });
+  }
 });
 
 export default router;

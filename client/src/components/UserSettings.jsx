@@ -5,7 +5,6 @@ import {
   usePasswordChange,
   useAccountDeletion,
 } from "../hooks/useUser";
-
 import {
   User,
   Lock,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import Footer from "./Footer";
 import { getImageUrl } from "../utils/imageHelper";
+import toast from "react-hot-toast";
 
 
 const UserSettings = () => {
@@ -185,23 +185,103 @@ const displayImage = previewImage ||
       setSavingNotifications(false);
     }
   };
+const performAccountDeletion = async () => {
+  try {
+    await requestDeletion(deletePassword); 
+    toast.success("Account deleted successfully!");
+    setShowDeleteModal(false);
+    setDeletePassword("");
+    setDeleteConfirmText("");
+  } catch (err) {
+    toast.error("Failed to delete account.");
+  }
+};
 
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== "DELETE") {
-      return;
-    }
+const handleDeleteAccountNow = () => {
+    toast((t) => (
+      <div className="flex flex-col gap-4 w-70">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-600" />
+          <p className="text-gray-900 font-bold text-base">
+            Delete your account?
+          </p>
+        </div>
+        
+        <p className="text-sm text-gray-600">
+          This will permanently delete all your data. This action cannot be undone.
+        </p>
 
-    try {
-      await requestDeletion(deletePassword);
-      setShowDeleteModal(false);
-      resetDeletionState();
-      setDeletePassword("");
-      setDeleteConfirmText("");
-    } catch (err) {}
+        <input
+          type="password"
+          placeholder="Enter your password"
+          id={`delete-password-${t.id}`}
+          className="w-full px-3 py-2 border-2 border-black shadow-[2px_2px_0_0_#000] focus:outline-none focus:ring-1 focus:ring-black"
+        />
+        
+        <input
+          type="text"
+          placeholder="Type DELETE to confirm"
+          id={`delete-confirm-${t.id}`}
+          className="w-full px-3 py-2 border-2 border-black shadow-[2px_2px_0_0_#000] focus:outline-none focus:ring-1 focus:ring-black"
+        />
+
+        <div className="flex justify-end gap-3">
+          <button
+            className="px-4 py-2 bg-gray-200 border-2 border-black shadow-[3px_3px_0_0_#000] hover:bg-gray-300 transition font-medium"
+            onClick={() => toast.dismiss(t.id)}
+          >
+            Cancel
+          </button>
+          <button
+            className="px-4 py-2 bg-red-600 text-white border-2 border-black shadow-[3px_3px_0_0_#000] hover:bg-red-500 transition font-medium"
+            onClick={async () => {
+              const passwordInput = document.getElementById(`delete-password-${t.id}`);
+              const confirmInput = document.getElementById(`delete-confirm-${t.id}`);
+              const password = passwordInput?.value || '';
+              const confirmText = confirmInput?.value || '';
+
+              if (!password) {
+                toast.error("Please enter your password");
+                return;
+              }
+
+              if (confirmText !== "DELETE") {
+                toast.error("You must type DELETE to confirm");
+                return;
+              }
+
+              toast.dismiss(t.id);
+
+              try {
+                await requestDeletion(password);
+                toast.success("Account deleted successfully!", {
+                  duration: 2000,
+                });
+                setTimeout(() => {
+                  window.location.href = "/";
+                }, 2000);
+              } catch (err) {
+                toast.error(err.message || "Failed to delete account");
+              }
+            }}
+          >
+            Delete Account
+          </button>
+        </div>
+      </div>
+    ), {
+      duration: Infinity,
+      position: "top-center",
+      style: {
+        border: "4px solid #000",
+        boxShadow: "6px 6px 0 0 #000",
+        borderRadius: "0px",
+        padding: "24px",
+        background: "#fafafa",
+        maxWidth: "500px",
+      },
+    });
   };
-
-
-
 
   return (
     <div
@@ -374,116 +454,82 @@ const displayImage = previewImage ||
                 </div>
               </div>
             )}
-
-            {/* Security Tab */}
-            {activeTab === "security" && (
-              <div className="bg-white shadow-sm border ">
-                <div className="p-6 border-b ">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Security Settings
-                  </h2>
+{activeTab === "security" && (
+              <div className="bg-white shadow-sm border">
+                <div className="p-6 border-b">
+                  <h2 className="text-xl font-semibold text-gray-900">Security Settings</h2>
                   <p className="text-gray-600 mt-1">Manage your password</p>
                 </div>
 
                 <form onSubmit={handlePasswordSubmit} className="p-6 space-y-4">
                   <h3 className="font-medium text-gray-900">Change Password</h3>
                   {passwordSuccess && (
-                    <div className="text-green-600 px-4 py-3  text-sm bg-green-50">
+                    <div className="text-green-600 px-4 py-3 text-sm bg-green-50">
                       Password updated successfully!
                     </div>
                   )}
 
                   {passwordErrors.submit && (
-                    <div className="text-red-500 px-4 py-3  text-sm bg-red-50">
+                    <div className="text-red-500 px-4 py-3 text-sm bg-red-50">
                       {passwordErrors.submit}
                     </div>
                   )}
-                  {/* Current Password */}
+
+                  {/* Password fields - keeping them as they were */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Current Password
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700">Current Password</label>
                     <div className="relative">
                       <input
                         type={showPasswords.old ? "text" : "password"}
                         value={passwordData.oldPassword}
                         onChange={handlePasswordChange("oldPassword")}
-                        className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="flex h-12 w-full shadow-[2px_2px_0_0_#000] border border-input bg-input pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowPasswords((p) => ({ ...p, old: !p.old }))
-                        }
+                        onClick={() => setShowPasswords((p) => ({ ...p, old: !p.old }))}
                         className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        {showPasswords.old ? (
-                          <EyeOff size={18} />
-                        ) : (
-                          <Eye size={18} />
-                        )}
+                        {showPasswords.old ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
                   </div>
 
-                  {/* New Password */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      New Password
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700">New Password</label>
                     <div className="relative">
                       <input
                         type={showPasswords.new ? "text" : "password"}
                         value={passwordData.newPassword}
                         onChange={handlePasswordChange("newPassword")}
-                        className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="flex h-12 w-full shadow-[2px_2px_0_0_#000] border border-input bg-input pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowPasswords((p) => ({ ...p, new: !p.new }))
-                        }
+                        onClick={() => setShowPasswords((p) => ({ ...p, new: !p.new }))}
                         className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        {showPasswords.new ? (
-                          <EyeOff size={18} />
-                        ) : (
-                          <Eye size={18} />
-                        )}
+                        {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      6+ chars with uppercase, lowercase, number
-                    </p>
+                    <p className="text-xs text-gray-500">8+ chars with uppercase, lowercase, number</p>
                   </div>
 
-                  {/* Confirm Password */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Confirm New Password
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700">Confirm New Password</label>
                     <div className="relative">
                       <input
                         type={showPasswords.confirm ? "text" : "password"}
                         value={passwordData.confirmPassword}
                         onChange={handlePasswordChange("confirmPassword")}
-                        className="flex h-12 w-full  shadow-card  shadow-[2px_2px_0_0_#000] border border-input bg-input  pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        className="flex h-12 w-full shadow-[2px_2px_0_0_#000] border border-input bg-input pl-2 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                       />
                       <button
                         type="button"
-                        onClick={() =>
-                          setShowPasswords((p) => ({
-                            ...p,
-                            confirm: !p.confirm,
-                          }))
-                        }
+                        onClick={() => setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))}
                         className="absolute right-3 top-1/2 -translate-y-1/2"
                       >
-                        {showPasswords.confirm ? (
-                          <EyeOff size={18} />
-                        ) : (
-                          <Eye size={18} />
-                        )}
+                        {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
                   </div>
@@ -491,14 +537,13 @@ const displayImage = previewImage ||
                   <button
                     type="submit"
                     disabled={passwordLoading}
-                    className="w-40 h-12 bg-yellow-200 shadow-card  shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-black font-medium  transition-colors cursor-pointer hover:border hover:border-2"
+                    className="w-40 h-12 bg-yellow-200 shadow-[4px_4px_0_0_#000] disabled:bg-gray-900 disabled:text-white text-black font-medium transition-colors cursor-pointer hover:border hover:border-2"
                   >
                     {passwordLoading ? "Updating..." : "Update Password"}
                   </button>
                 </form>
               </div>
             )}
-
             {/* Notifications Tab */}
             {activeTab === "notifications" && (
               <div className="bg-white shadow-sm border">
@@ -545,27 +590,21 @@ const displayImage = previewImage ||
               </div>
             )}
 
-            {/* Danger Zone Tab */}
-            {activeTab === "danger" && (
-              <div className="bg-white  shadow-sm border ">
-                <div className="p-6 border-b ">
+
+ {activeTab === "danger" && (
+              <div className="bg-white shadow-sm border">
+                <div className="p-6 border-b">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
-                    <h2 className="text-xl font-semibold text-red-900">
-                      Delete Account
-                    </h2>
+                    <h2 className="text-xl font-semibold text-red-900">Delete Account</h2>
                   </div>
                   <p className="text-red-700 mt-1">Irreversible actions</p>
                 </div>
 
                 <div className="p-6">
-                  <div className="border-2 border-red-200  p-6 bg-red-50 ">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Delete Account
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      This will permanently delete:
-                    </p>
+                  <div className="border-2 border-red-200 p-6 bg-red-50">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Account</h3>
+                    <p className="text-gray-600 mb-4">This will permanently delete:</p>
                     <ul className="list-disc list-inside text-gray-600 space-y-1 mb-4">
                       <li>Your profile and personal information</li>
                       <li>All your feedback walls</li>
@@ -573,8 +612,8 @@ const displayImage = previewImage ||
                       <li>All reactions and engagement data</li>
                     </ul>
                     <button
-                      onClick={() => setShowDeleteModal(true)}
-                      className="px-6 py-2 bg-red-600 text-white w-40 h-12 bg-red-100 shadow-card  shadow-[4px_4px_0_0_#000] text-black font-medium  transition-colors cursor-pointer hover:border hover:border-2 flex items-center gap-2"
+                      onClick={handleDeleteAccountNow}
+                      className="px-6 py-2 bg-red-600 text-white h-12 shadow-[4px_4px_0_0_#000] font-medium transition-colors cursor-pointer hover:border hover:border-2 hover:border-black flex items-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete My Account
@@ -586,77 +625,6 @@ const displayImage = previewImage ||
           </div>
         </div>
       </div>
-
-      {/* Delete Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-              <h3 className="text-xl font-bold text-gray-900">
-                Delete Account
-              </h3>
-            </div>
-
-            <p className="text-gray-600 mb-4">
-              This action cannot be undone. All your data will be permanently
-              deleted.
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Enter your password
-                </label>
-                <input
-                  type="password"
-                  value={deletePassword}
-                  onChange={(e) => setDeletePassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  placeholder="Your password"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type <strong>DELETE</strong> to confirm
-                </label>
-                <input
-                  type="text"
-                  value={deleteConfirmText}
-                  onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500"
-                  placeholder="DELETE"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setDeletePassword("");
-                  setDeleteConfirmText("");
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={
-                  !deletePassword ||
-                  deleteConfirmText !== "DELETE" ||
-                  deletionLoading
-                }
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400"
-              >
-                {deletionLoading ? "Deleting..." : "Delete Account"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <Footer />
     </div>
   );

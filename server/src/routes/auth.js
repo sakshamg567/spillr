@@ -54,6 +54,13 @@ const validateEmail = (email) => {
   return emailRegex.test(email) && email.length <= 254;
 };
 
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, 
+  max: 3, 
+  message: { message: "Too many password reset attempts, please try again later" },
+  skipSuccessfulRequests: false,
+});
+
 const validateUsername = (username) => {
   return (
     username &&
@@ -359,21 +366,28 @@ router.post("/login", authLimiter, async (req, res) => {
   }
 });
 
-
-router.post("/forgot-password", async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) return res.status(400).json({ message: "Email is required" });
-
+router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
   try {
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const email = req.body.email?.trim().toLowerCase();
+
+    if (!email || !validateEmail(email)) {
+      return res.status(400).json({ message: "Valid email is required" });
     }
+
+    console.log("Attempting password reset for:", email);
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(200).json({
+        message: "If an account exists with this email, a reset link has been sent."
+      });
+    }
+
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    user.resetPasswordExpires = Date.now() + 3600000; 
     await user.save();
 
     const resetURL = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
@@ -381,25 +395,29 @@ router.post("/forgot-password", async (req, res) => {
     const mailContent = {
       to: user.email,
       subject: "Password Reset Request - Spillr",
-      text: `Click this link to reset your password: ${resetURL}`,
-      html: `
-        <p>You requested a password reset.</p>
-        <p>Click this link to reset your password:</p>
-        <a href="${resetURL}">${resetURL}</a>
-        <p>This link expires in 1 hour.</p>
-      `
+      html: `<p>Click <a href="${resetURL}">here</a> to reset your password.</p>`,
+      text: `Reset your password: ${resetURL}`
     };
 
-    const emailResult = await sendEmail(mailContent);
-    
-    if (emailResult.success) {
-      res.status(200).json({ message: "Reset link sent to your email" });
-    } else {
-      res.status(500).json({ message: "Failed to send reset email. Please try again." });
+    try {
+      const emailResult = await sendEmail(mailContent);
+      console.log("sendEmail result:", emailResult);
+
+      return res.status(200).json({
+        message: "If an account exists with this email, a reset link has been sent."
+      });
+    } catch (err) {
+      console.error("Failed to send password reset email:", err);
+      return res.status(500).json({
+        message: "Failed to send reset email. Please try again later."
+      });
     }
+
   } catch (err) {
-    console.error("Forgot password error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Forgot password route error:", err);
+    return res.status(500).json({
+      message: "An error occurred. Please try again later."
+    });
   }
 });
 
@@ -408,6 +426,12 @@ router.post("/reset-password", async (req, res) => {
 
   if (!token || !password) {
     return res.status(400).json({ message: "Token and password are required" });
+  }
+
+  if (!validatePassword(password)) {
+    return res.status(400).json({ 
+      message: "Password must be 6-128 characters with uppercase, lowercase, and number" 
+    });
   }
 
   try {
@@ -425,17 +449,27 @@ router.post("/reset-password", async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    const authToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+    console.log(' Password reset successful for:', user.email);
+
+    const JWT_SECRET = getJWTSecret();
+    const authToken = jwt.sign(
+      { id: user._id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    setTokenCookie(res, authToken);
+
     res.json({
       message: "Password reset successful",
       token: authToken,
       user: { id: user._id, email: user.email, name: user.name },
     });
   } catch (error) {
+    console.error(" Reset password error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 router.get("/verify-reset-token/:token", async (req, res) => {
   try {
@@ -452,10 +486,11 @@ router.get("/verify-reset-token/:token", async (req, res) => {
 
     res.status(200).json({ email: user.email });
   } catch (err) {
-    console.error("Verify reset token error:", err);
+    console.error(" Verify reset token error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 router.post("/logout", (req, res) => {
