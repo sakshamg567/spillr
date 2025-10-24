@@ -61,14 +61,14 @@ export default function Navbar() {
 
   return (
     <div style={{ fontFamily: "Space Grotesk" }}>
-      <header className="fixed top-0 left-0 right-0 flex items-center bg-yellow-200 border-b border-black h-16 z-50">
+      <header className="fixed top-0 left-0 right-0 flex items-center bg-yellow-200 border-b border-black h-16 z-50 max-w-full overflow-hidden">
         <div className="w-full flex justify-between items-center px-4">
-          <div className="font-['Fasthin',cursive] text-3xl md:text-4xl text-black tracking-wide">
+          <div className="font-['Fasthin',cursive] text-2xl sm:text-3xl md:text-4xl text-black tracking-wide shrink-0">
             Spillr
           </div>
 
           {/* Navigation */}
-          <nav className="relative flex items-center gap-4">
+          <nav className="relative flex items-center gap-2 sm:gap-3 md:gap-4 shrink min-w-0">
             <div
               className="absolute bottom-0 h-[4px] bg-black transition-all duration-700 ease-out"
               style={{
@@ -85,11 +85,10 @@ export default function Navbar() {
                 onClick={() => handleItemClick(item)}
                 onMouseEnter={() => updateIndicator(item.label)}
                 onMouseLeave={() => updateIndicator(activeItem)}
-                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                  activeItem === item.label
-                    ? "text-gray-700"
-                    : "text-black hover:text-gray-800"
-                }`}
+                className={`px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium transition-colors duration-200 ${activeItem === item.label
+                  ? "text-gray-700"
+                  : "text-black hover:text-gray-800"
+                  }`}
               >
                 {item.label}
               </a>

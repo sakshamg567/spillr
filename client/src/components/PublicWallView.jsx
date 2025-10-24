@@ -44,15 +44,15 @@ const PublicWallView = ({ logout }) => {
   const getNavItems = (loggedIn) =>
     loggedIn
       ? [
-          { label: "Home", onClick: () => handleNavigation("/") },
-          { label: "Dashboard", onClick: () => handleNavigation("/dashboard") },
-          { label: "Settings", onClick: () => handleNavigation("/settings") },
-        ]
+        { label: "Home", onClick: () => handleNavigation("/") },
+        { label: "Dashboard", onClick: () => handleNavigation("/dashboard") },
+        { label: "Settings", onClick: () => handleNavigation("/settings") },
+      ]
       : [
-          { label: "Home", onClick: () => handleNavigation("/") },
-          { label: "Register", onClick: () => handleNavigation("/register") },
-          { label: "Login", onClick: () => handleNavigation("/login") },
-        ];
+        { label: "Home", onClick: () => handleNavigation("/") },
+        { label: "Register", onClick: () => handleNavigation("/register") },
+        { label: "Login", onClick: () => handleNavigation("/login") },
+      ];
 
   const items = getNavItems(isAuthenticated);
 
@@ -69,14 +69,14 @@ const PublicWallView = ({ logout }) => {
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-  
+
   const fetchUserProfile = useCallback(async () => {
     if (!slug) return;
-    
+
     try {
       setLoadingProfile(true);
       const response = await fetch(`${API_BASE_URL}/api/public/wall/${slug}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setUserProfile(data);
@@ -96,13 +96,13 @@ const PublicWallView = ({ logout }) => {
 
   const fetchAnsweredFeedback = useCallback(async () => {
     if (!slug) return;
-    
+
     try {
       setLoadingFeedback(true);
       const response = await fetch(
         `${API_BASE_URL}/api/feedback/wall/${slug}`
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         setAnsweredFeedbacks(data.feedbacks || []);
@@ -122,7 +122,7 @@ const PublicWallView = ({ logout }) => {
     }
   }, [slug, fetchUserProfile, fetchAnsweredFeedback]);
 
-  
+
   useEffect(() => {
     if (!slug) return;
 
@@ -138,7 +138,7 @@ const PublicWallView = ({ logout }) => {
   const handleManualRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-     await fetchAnsweredFeedback();
+      await fetchAnsweredFeedback();
 
     } catch (err) {
       console.error('Refresh failed:', err);
@@ -184,11 +184,11 @@ const PublicWallView = ({ logout }) => {
       if (!response.ok) {
         throw new Error(data.message || "Failed to send message");
       }
-      
+
       setSent(true);
       setFormData({ question: "" });
-      
-     
+
+
       setTimeout(() => {
         fetchAnsweredFeedback();
       }, 3000);
@@ -270,11 +270,10 @@ const PublicWallView = ({ logout }) => {
                 onClick={() => handleItemClick(item)}
                 onMouseEnter={() => updateIndicator(item.label)}
                 onMouseLeave={() => updateIndicator(activeItem)}
-                className={`px-3 py-2 text-sm tracking-wide transition-colors duration-200 ${
-                  activeItem === item.label
-                    ? "text-black"
-                    : "text-black hover:text-gray-800"
-                }`}
+                className={`px-3 py-2 text-sm tracking-wide transition-colors duration-200 ${activeItem === item.label
+                  ? "text-black"
+                  : "text-black hover:text-gray-800"
+                  }`}
               >
                 {item.label}
               </button>
@@ -288,20 +287,20 @@ const PublicWallView = ({ logout }) => {
         <div className="border-4 border-black bg-white p-10 shadow-[8px_8px_0_0_#000]">
           <div className="flex flex-col items-center text-center">
             <div className="w-32 h-32 border-4 border-black bg-yellow-100 flex items-center justify-center mb-4 shadow-[4px_4px_0_0_#000]">
-  {userProfile?.profilePicture && !imageError ? (
-    <img
-      src={getImageUrl(userProfile.profilePicture)}
-      alt={userProfile.name || 'Profile picture'}
-      className="w-full h-full object-cover"
-      onError={() => {
-        console.error('Public wall image failed to load');
-        setImageError(true);
-      }}
-    />
-  ) : (
-    <span className="text-4xl font-extrabold">
-      {getInitials(userProfile?.name || 'User')}
-    </span>
+              {userProfile?.profilePicture && !imageError ? (
+                <img
+                  src={getImageUrl(userProfile.profilePicture)}
+                  alt={userProfile.name || 'Profile picture'}
+                  className="w-full h-full object-cover"
+                  onError={() => {
+                    console.error('Public wall image failed to load');
+                    setImageError(true);
+                  }}
+                />
+              ) : (
+                <span className="text-4xl font-extrabold">
+                  {getInitials(userProfile?.name || 'User')}
+                </span>
               )}
             </div>
 
@@ -373,7 +372,7 @@ const PublicWallView = ({ logout }) => {
                 <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
             </div>
-            
+
             {loadingFeedback && answeredFeedbacks.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto" />
