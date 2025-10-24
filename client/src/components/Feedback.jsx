@@ -53,6 +53,7 @@ export default function FeedbackManagement() {
       if (intervalId) clearInterval(intervalId);
     };
   }, [filters.sort]);
+
   const handleManualRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
@@ -93,6 +94,12 @@ export default function FeedbackManagement() {
       </span>
     );
   };
+
+  const decodeHTML = (str) => {
+    const parser = new DOMParser();
+    return parser.parseFromString(str, "text/html").body.textContent;
+  }
+
 
   if (loading && !feedbacks.length)
     return (
@@ -206,11 +213,10 @@ export default function FeedbackManagement() {
                   <button
                     key={tab.key}
                     onClick={() => updateFilters({ sort: tab.key, page: 1 })}
-                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold border-2 border-black whitespace-nowrap ${
-                      filters.sort === tab.key
-                        ? "bg-black text-white"
-                        : "bg-white text-black"
-                    }`}
+                    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold border-2 border-black whitespace-nowrap ${filters.sort === tab.key
+                      ? "bg-black text-white"
+                      : "bg-white text-black"
+                      }`}
                   >
                     {tab.label} ({tab.count})
                   </button>
@@ -270,7 +276,7 @@ export default function FeedbackManagement() {
                           {/* Question */}
                           <div className="bg-gray-50 sm:px-4 sm:py-2">
                             <p className="text-sm sm:text-base text-gray-900">
-                              {feedback.question}
+                              {decodeHTML(feedback.question)}
                             </p>
                           </div>
 
